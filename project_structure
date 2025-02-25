@@ -1,13 +1,15 @@
 FRAUD_DETECTION/
 ├── static/
 │   ├── uploads/          # Store uploaded images
-│   ├── css/             # CSS files
-│   │   └── style.css
-│   ├── js/              # JavaScript files
-│   │   └── main.js
-│   └── images/          # Static images for frontend
-├── templates/           # HTML files
+│   ├── css/             
+│   ├── js/              
+│   └── images/          
+├── templates/           
 │   └── index.html
-├── app.py              # Flask backend
-├── requirements.txt    # Dependencies
-└── models/            # Pre-trained models 
+├── models/             # Pre-trained models cache
+├── ai_modules/         # AI model integration
+│   ├── __init__.py
+│   ├── detector.py     # AI detection interface
+│   └── config.py       # AI model configurations
+├── app.py             # Flask backend
+└── requirements.txt   

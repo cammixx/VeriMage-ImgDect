@@ -1,5 +1,11 @@
 Flask==3.0.2
 Werkzeug==3.0.1
 Pillow==10.2.0
+torch --index-url https://download.pytorch.org/whl/nightly/cpu
+torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu
+transformers==4.37.2
+diffusers==0.25.0
+python-magic==0.4.27
 --pre
 --index-url https://pypi.org/simple 
