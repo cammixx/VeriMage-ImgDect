@@ -1,0 +1,13 @@
+FRAUD_DETECTION/
+├── static/
+│   ├── uploads/          # Store uploaded images
+│   ├── css/             # CSS files
+│   │   └── style.css
+│   ├── js/              # JavaScript files
+│   │   └── main.js
+│   └── images/          # Static images for frontend
+├── templates/           # HTML files
+│   └── index.html
+├── app.py              # Flask backend
+├── requirements.txt    # Dependencies
+└── models/            # Pre-trained models 
