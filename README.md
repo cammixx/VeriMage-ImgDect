@@ -1,5 +1,5 @@
 # Fraud_Detection
-The main aim of this project is to detect an AI-generated image and predict its confidence score.
+The Fraud Detection project focuses on identifying AI-generated images and estimating the confidence score of the detection. Its primary goal is to build a binary image classification model that accurately differentiates between real and AI-generated images.
 
 ## Dataset
 <!-- Dataset details to be updated-->
