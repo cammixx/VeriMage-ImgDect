@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The **Fraud Detection** project aims to detect AI-generated images and predict the confidence score of the detection. The primary goal of this project is to build a **binary image classification model** capable of accurately distinguishing between **real** and **AI-generated images**. The model utilizes advanced deep learning techniques and is trained to identify subtle patterns that differentiate AI-generated faces from real human faces.
+The **Fraud Detection** project aims to detect AI-generated images and predict the confidence score of the detection. The primary goal of this project is to build a **binary image classification model** capable of accurately distinguishing between **real** and **AI-generated images**. The model utilizes advanced deep learning techniques and is trained to identify subtle patterns that differentiate AI-generated images from real images.
 
 ## Dataset
 
