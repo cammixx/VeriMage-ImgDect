@@ -3,7 +3,8 @@ import os
 from werkzeug.utils import secure_filename
 import logging
 from PIL import Image
-# from detector import DummyDetector  # Import the dummy detector
+import traceback  # Added for better error tracking
+import datetime
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -27,9 +28,48 @@ app.config.update(
     MODEL_CACHE_DIR='models'  # Where to cache AI models
 )
 
-# Initialize the image detector
-# TODO: Replace DummyDetector with your actual detector implementation
-#detector = DummyDetector()
+class AI_Detector:
+    """Temporary placeholder for the AI Detector class that will be replaced with actual implementation"""
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+
+    def analyze_image_metadata(self, image_path):
+        """Analyze basic image metadata"""
+        try:
+            with Image.open(image_path) as img:
+                return {
+                    "format": img.format,
+                    "size": img.size,
+                    "mode": img.mode,
+                    "dpi": img.info.get('dpi', 'Not available'),
+                    "filename": os.path.basename(image_path)
+                }
+        except Exception as e:
+            self.logger.error(f"Error analyzing image metadata: {str(e)}")
+            return None
+
+    def detect(self, image_path):
+        """Process image and return detection report
+        
+        Args:
+            image_path (str): Path to the image file
+            
+        Returns:
+            dict: Comprehensive detection report including:
+                - Image metadata
+                - AI generation analysis
+                - Manipulation detection
+                - Confidence scores
+        """
+        metadata = self.analyze_image_metadata(image_path)
+        
+        # This is a placeholder report structure that will be replaced with actual AI analysis
+        return {
+            
+        }
+
+# Initialize the placeholder detector
+detector = AI_Detector()
 
 def allowed_file(filename: str) -> bool:
     """Check if the uploaded file has an allowed extension.
@@ -81,16 +121,28 @@ def index():
     """Serve the main page."""
     return render_template('index.html')
 
+@app.route('/result/<filename>')
+def show_result(filename):
+    """Display detection results for a specific image."""
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(filepath):
+            return jsonify({"error": "File not found"}), 404
+            
+        # Get placeholder results
+        detection_results = detector.detect(filepath)
+        
+        return render_template('result.html', 
+                             filename=filename, 
+                             detection_results=detection_results)
+                             
+    except Exception as e:
+        logger.error(f"Error showing results: {traceback.format_exc()}")
+        return jsonify({"error": "Failed to process detection results"}), 500
+
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    """Handle image upload, validation, and detection.
-    
-    Expects a file in the request with key 'file'.
-    
-    Returns:
-        JSON response with upload result and detection results if successful.
-        Error message with appropriate status code if upload fails.
-    """
+    """Handle image upload, validation, and detection."""
     try:
         # Check if file was included in request
         if 'file' not in request.files:
@@ -100,32 +152,34 @@ def upload_image():
         if file.filename == '':
             return jsonify({"error": "Empty filename"}), 400
             
-        if file and allowed_file(file.filename):
-            # Validate image quality
-            is_valid, message = validate_image_quality(file)
-            if not is_valid:
-                return jsonify({"error": message}), 400
+        if not file or not allowed_file(file.filename):
+            return jsonify({"error": "Invalid file type. Allowed types are: " + 
+                          ", ".join(app.config['ALLOWED_EXTENSIONS'])}), 400
             
-            # Save the file
-            filename = secure_filename(file.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            
-            # Run detection on the uploaded image
-            detection_results = detector.detect(filepath)
-            
-            logger.info(f"File processed successfully: {filename}")
-            return jsonify({
-                "message": "File processed successfully",
-                "filename": filename,
-                "detection_results": detection_results
-            }), 200
-            
-        return jsonify({"error": "Invalid file type"}), 400
+        # Validate image quality
+        is_valid, message = validate_image_quality(file)
+        if not is_valid:
+            return jsonify({"error": message}), 400
         
+        # Save the file
+        filename = secure_filename(file.filename)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        try:
+            file.save(filepath)
+        except Exception as e:
+            logger.error(f"Failed to save file: {str(e)}")
+            return jsonify({"error": "Failed to save uploaded file"}), 500
+        
+        # Redirect to result page
+        return jsonify({
+            "success": True,
+            "redirect": f"/result/{filename}"
+        }), 200
+            
     except Exception as e:
-        logger.error(f"Error processing upload: {str(e)}")
+        logger.error(f"Error processing upload: {traceback.format_exc()}")
         return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
