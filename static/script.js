@@ -1,27 +1,57 @@
-document.getElementById('image-upload').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.getElementById('image-preview');
-            img.src = e.target.result;
-            img.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+document.addEventListener("DOMContentLoaded", function () {
+    const uploadBox = document.querySelector(".upload-area");
+    if (uploadBox) {
+        uploadBox.addEventListener("click", function () {
+            document.getElementById("imageInput").click();
+        });
     }
-});
 
-document.getElementById('upload-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const formData = new FormData();
-    const fileInput = document.getElementById('image-upload');
-    formData.append('image', fileInput.files[0]);
+    // Handle Image Upload Preview
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const container = document.getElementById('thumbnailContainer');
+            const preview = document.getElementById('imagePreview');
 
-    const response = await fetch('/upload', {
-        method: 'POST',
-        body: formData
+            if (container && preview) {
+                container.style.display = 'block';
+                preview.src = reader.result;
+                document.getElementById('fullSizePreview').src = reader.result;
+            }
+        };
+
+        if (this.files.length > 0) {
+            reader.readAsDataURL(this.files[0]);
+        }
     });
 
-    const result = await response.json();
-    document.getElementById('result').innerText = result.message;
+    // Handle Form Submission and Redirect
+    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const submitButton = document.querySelector('button[type="submit"]');
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+        submitButton.disabled = true;
+
+        // Simulated API call (Replace this with actual API fetch)
+        const formData = new FormData(this);
+        // const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+        // const result = await response.json();
+
+        // Simulated result for now
+        const result = {
+            is_fraud: Math.random() > 0.5,
+            confidence: (Math.random() * 100).toFixed(2)
+        };
+
+        // Store result data in sessionStorage (Temporary Data Storage)
+        sessionStorage.setItem("analysisResult", JSON.stringify(result));
+
+        // Redirect to result page
+        window.location.href = "result.html"; // Ensure result.html exists
+
+        // Reset button state (not needed if redirect happens)
+        submitButton.innerHTML = 'Analyze Image';
+        submitButton.disabled = false;
+    });
 });
