@@ -76,7 +76,3 @@ To efficiently load data during training, the images are wrapped in **PyTorch Da
 
 By setting up these preprocessing and data loading steps, we ensure that the model receives well-processed, consistent input data, which is crucial for achieving high performance in AI-generated image detection.
 
-
-
-
-
