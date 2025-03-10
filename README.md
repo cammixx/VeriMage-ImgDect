@@ -1,4 +1,3 @@
-<<<<<<< backend
 # AI Image Fraud Detection System
 
 A web-based system for detecting AI-generated and manipulated images using advanced machine learning techniques.
@@ -137,5 +136,3 @@ To efficiently load data during training, the images are wrapped in **PyTorch Da
 - **Multi-threaded loading (`num_workers=2`)**: Multiple workers are used for parallel data loading, ensuring faster processing of images.
 
 By setting up these preprocessing and data loading steps, we ensure that the model receives well-processed, consistent input data, which is crucial for achieving high performance in AI-generated image detection.
-
->>>>>>> main
