@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 # Application Configuration
 app.config.update(
     # Upload settings
-    UPLOAD_FOLDER='static/uploads',  # Where uploaded images are stored
-    ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg'},  # Allowed file types
-    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # Maximum file size (16MB)
+    UPLOAD_FOLDER='static/uploads',  # Upload directory configured
+    ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg'},  # File type restrictions
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # File size limit (16MB)
     
     # Image quality requirements
     MIN_IMAGE_SIZE=(224, 224),  # Minimum dimensions required (width, height)
@@ -181,6 +181,12 @@ def upload_image():
     except Exception as e:
         logger.error(f"Error processing upload: {traceback.format_exc()}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_image():
+    # Handle file upload from frontend
+    # Process image
+    # Return results in JSON format
 
 if __name__ == '__main__':
     # Ensure required directories exist
