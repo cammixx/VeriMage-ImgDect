@@ -58,7 +58,7 @@ FRAUD_DETECTION/
 5. Create a Pull Request
 
 ## License
-=======
+
 # Fraud_Detection
 
 ## Introduction
