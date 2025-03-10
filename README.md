@@ -1,18 +1,9 @@
-# AI Image Fraud Detection System
+# Fraud_Detection_Project
 
-A web-based system for detecting AI-generated and manipulated images using advanced machine learning techniques.
+## Introduction
 
-## Features
+The **Fraud Detection** project aims to detect AI-generated images and predict the confidence score of the detection. The primary goal of this project is to build a **binary image classification model** capable of accurately distinguishing between **real** and **AI-generated images**. The model utilizes advanced deep learning techniques and is trained to identify subtle patterns that differentiate AI-generated images from real images.
 
-- Upload and analyze images for potential AI generation or manipulation
-- Detailed analysis of image metadata and visual characteristics
-- AI pattern detection and model identification
-- User-friendly web interface with comprehensive results display
-- Secure file handling and validation
-
-## Project Structure
-
-```
 FRAUD_DETECTION/
 ├── ai_modules/           # AI detection implementation
 │   └── detector.py      # Core detection logic
@@ -25,8 +16,6 @@ FRAUD_DETECTION/
 ├── dataset/           # Training and testing datasets
 ├── app.py             # Flask application
 └── requirements.txt   # Project dependencies
-```
-
 
 ## Usage
 
@@ -43,27 +32,6 @@ FRAUD_DETECTION/
 - Frontend: Located in `templates/` directory
 - Backend: Main application logic in `app.py`
 - AI Module: Implementation in `ai_modules/detector.py`
-
-## Requirements
-
-- Python 3.8+
-- See requirements.txt for complete list of dependencies
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-# Fraud_Detection
-
-## Introduction
-
-The **Fraud Detection** project aims to detect AI-generated images and predict the confidence score of the detection. The primary goal of this project is to build a **binary image classification model** capable of accurately distinguishing between **real** and **AI-generated images**. The model utilizes advanced deep learning techniques and is trained to identify subtle patterns that differentiate AI-generated images from real images.
 
 ## Dataset
 
