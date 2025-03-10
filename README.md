@@ -4,6 +4,7 @@
 
 The **Fraud Detection** project aims to detect AI-generated images and predict the confidence score of the detection. The primary goal of this project is to build a **binary image classification model** capable of accurately distinguishing between **real** and **AI-generated images**. The model utilizes advanced deep learning techniques and is trained to identify subtle patterns that differentiate AI-generated images from real images.
 
+```
 FRAUD_DETECTION/
 ├── ai_modules/           # AI detection implementation
 │   └── detector.py      # Core detection logic
@@ -16,6 +17,7 @@ FRAUD_DETECTION/
 ├── dataset/           # Training and testing datasets
 ├── app.py             # Flask application
 └── requirements.txt   # Project dependencies
+```
 
 ## Usage
 
