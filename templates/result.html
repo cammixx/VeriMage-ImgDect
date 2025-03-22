@@ -1,47 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Result</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../static/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analysis Result</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
-    <div class="container text-center mt-5">
-        <h1>Analysis Result</h1>
+  <header class="site-header">
+    <h1>AI-generated Image Detector</h1>
+  </header>
 
-        <!-- Result Display -->
-        <div class="result-box mt-4" id="resultContainer">
-            <h4 class="mb-3">Result:</h4>
-            <p id="resultText" class="h5"></p>
+  <div class="content-container">
+    <div class="result-box mt-4" id="resultContainer">
+      <h2 class="text-center mb-3">Analysis Result:</h2>
+      <p class="text-center" id="introText">Compare with our data, we say this image is...</p>
+      <div class="row justify-content-center mt-4">
+        <div class="col-md-6">
+          <div id="thumbnailContainer" class="preview-container text-center">
+            <img id="userImage" class="preview-thumbnail" src="" alt="Uploaded Image">
+          </div>
         </div>
-
-        <!-- Back Button -->
-        <a href="index.html" class="btn btn-primary mt-3">Go Back</a>
+      </div>
+      <p id="resultText" class="h5 text-center mt-3"></p>
     </div>
+    <div class="text-center mt-3">
+      <a href="index.html" class="btn btn-primary">Go Back</a>
+    </div>
+  </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const resultContainer = document.getElementById("resultContainer");
-            const resultText = document.getElementById("resultText");
-
-            // Retrieve data from sessionStorage
-            const resultData = JSON.parse(sessionStorage.getItem("analysisResult"));
-
-            if (resultData) {
-                if (resultData.is_fraud) {
-                    resultContainer.className = "result-box bg-danger text-white";
-                    resultText.textContent = `AI-generated (${resultData.confidence}% confidence)`;
-                } else {
-                    resultContainer.className = "result-box bg-success text-white";
-                    resultText.textContent = `Authentic (${resultData.confidence}% confidence)`;
-                }
-            } else {
-                resultText.textContent = "No result found.";
-            }
-        });
-    </script>
+  <script src="../static/script.js"></script>
 </body>
 </html>

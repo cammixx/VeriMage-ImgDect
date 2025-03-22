@@ -1,51 +1,105 @@
-/* Thumbnail Container - Hidden by default */
-#thumbnailContainer {
-    display: none;
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 0.8); /* semi-transparent grey overlay */
+    display: none; /* hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+  
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 6rem;
+    color: #fff;
 }
 
-/* Upload Container */
-.upload-container {
+body {
+    background-color: black;
+    color: #fff;
+    margin: 0.5rem;
+    font-family: Aptos, sans-serif;
+}
+
+.site-header {
+    text-align: center;
+    margin-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #fff;
+}
+
+.site-header h1 {
+    font-family: 'AkayaKanadaka', sans-serif;
+    font-size: 2rem;
+    margin: 0;
+    color: #fff;
+}
+
+.content-container {
+    background-color: #fff;
+    color: #000;
     max-width: 800px;
     margin: 2rem auto;
     padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
-/* Upload Area */
 .upload-area {
-    border: 2px dashed #ccc;
+    border: 2px dashed black;
     border-radius: 10px;
     padding: 2rem;
     text-align: center;
-    margin: 1rem 0;
-    background-color: #f8f9fa;
+    background-color: #fff;
     transition: all 0.3s ease;
     cursor: pointer;
+    color: black;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.upload-info {
+    color: #666;
+    line-height: 1.5;
 }
 
 .upload-area:hover {
-    border-color: #0d6efd;
-    background-color: #e9f0ff;
+    background-color: #000;
+    color: #fff;
 }
 
-/* Thumbnail Styles */
+.preview-container {
+    border: 2px dashed #000;
+    border-radius: 10px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .preview-thumbnail {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
+    width: 100%;            
+    height: 100%;           
+    object-fit: contain;
     border-radius: 8px;
     cursor: pointer;
-    border: 2px solid #dee2e6;
     transition: transform 0.2s;
-}
+    border: none;
+  }
+  
+  .preview-thumbnail:hover {
+    transform: scale(1.02);
+    border: none;
+  }
 
-.preview-thumbnail:hover {
-    transform: scale(1.05);
-    border-color: #0d6efd;
-}
-
-/* Modal Styles */
 #imageModal .modal-content {
-    background-color: #f8f9fa;
+    background-color: #fff;
+    color: #000;
 }
 
 #fullSizePreview {
@@ -53,58 +107,58 @@
     object-fit: contain;
 }
 
-/* Result Box - Hidden by default */
 .result-box {
     padding: 1rem;
     margin-top: 1rem;
     border-radius: 5px;
-    display: none;
+    transition: all 0.3s ease;
 }
 
-/* Result Container */
-.result-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
+.result-box h2 {
+    font-weight: bold;
 }
 
-/* Result Card */
-.result-card {
-    background: white;
+/* Set initial opacity for fade-in elements on the result page (if you wish to use CSS transitions) */
+#userImage,
+#resultText {
+    opacity: 1;
+    transition: opacity 1.5s ease-out;
+}
+
+.result-image-zone {
+    border: 1px solid #ccc; /* Thin light grey border */
+    padding: 5px;
     border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    display: flex;
-    gap: 2rem;
-    align-items: center;
+    display: block;         /* Block element for centering */
+    margin: 0 auto 1rem;     /* Center horizontally and add bottom margin */
+    text-align: center;     /* Ensure inner content (the image) is centered */
+  }
+
+.btn-primary {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
 }
 
-/* Result Preview */
-.result-preview {
-    flex: 1;
-    max-width: 400px;
+.btn-primary:hover {
+    background-color: #fff;
+    border-color: #000;
+    color: #000;
 }
 
-.result-preview img {
-    max-height: 400px;
-    max-width: 100%; /* Ensures no overflow */
-    object-fit: contain;
-    border-radius: 8px;
+.authentic {
+    color: #008000;
+    font-weight: bold;
 }
 
-/* Result Content */
-.result-content {
-    flex: 1;
-    text-align: center;
+.fraudulent {
+    color: #e60000;
+    font-weight: bold;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-    .result-card {
-        flex-direction: column;
-    }
-    
-    .result-preview {
-        max-width: 100%;
+    .content-container {
+        margin: 1rem;
+        padding: 1rem;
     }
 }

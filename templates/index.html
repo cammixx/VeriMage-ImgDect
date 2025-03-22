@@ -1,55 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Fraud Detection</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../static/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Detection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="upload-container">
-            <h1 class="text-center mb-4">AI Fraud Detection</h1>
-
-            <!-- Upload Form -->
-            <form id="uploadForm" enctype="multipart/form-data" method="POST">
-                <div class="upload-area" id="uploadBox">
-                    <p class="text-muted">Click to upload an image</p>
-                    <input type="file" id="imageInput" name="image" accept="image/*" hidden>
-                </div>
-
-                <!-- Image Preview (Thumbnail) -->
-                <div id="thumbnailContainer" class="text-center mt-3" style="display: none;">
-                    <img id="imagePreview" class="preview-thumbnail" onclick="openFullSizeImage()">
-                </div>
-
-                <!-- Submit Button -->
-                <div class="d-grid gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Analyze Image</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Image Modal -->
-    <div class="modal fade" id="imageModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Full Size Preview</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <img id="fullSizePreview" class="img-fluid">
-                </div>
+  <header class="site-header">
+    <h1>AI-generated Image Detector</h1>
+  </header>
+  
+  <div class="content-container">
+    <div class="upload-container">
+      <h2 class="text-center mb-4" style="font-weight: bold;">Upload Image Here</h2>
+      <!-- Upload Form -->
+      <form id="uploadForm" enctype="multipart/form-data" method="POST">
+        <div class="row">
+          <!-- Left Column: Upload Zone -->
+          <div class="col-md-6">
+            <div class="upload-area" id="uploadBox">
+              <p>Click to upload an image</p>
+              <small class="upload-info">
+                Supported formats: JPEG, PNG.<br>
+                Max file size: 2MB.</small>
+              <input type="file" id="imageInput" name="image" accept="image/*" hidden>
             </div>
+          </div>
+          <!-- Right Column: Preview Zone -->
+          <div class="col-md-6">
+            <div id="thumbnailContainer" class="preview-container text-center">
+              <p id="previewPlaceholder">Image Preview</p>
+              <img id="imagePreview" class="preview-thumbnail" onclick="openFullSizeImage()" style="display: none;">
+            </div>
+          </div>
         </div>
+        <!-- Submit Button -->
+        <div class="d-grid gap-2 mt-4">
+          <button type="submit" class="btn btn-primary btn-lg">Click to Analyze</button>
+        </div>
+      </form>
     </div>
+  </div>
+  
+  <!-- Loading overlay for analysis animation -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Processing...</span>
+    </div>
+  </div>
 
-    <!-- Bootstrap & Custom Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../static/script.js"></script>
+  <!-- Image Modal -->
+  <div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Full Size Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="fullSizePreview" class="img-fluid">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & Custom Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../static/script.js"></script>
 </body>
 </html>
