@@ -1,0 +1,164 @@
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 0.8); /* semi-transparent grey overlay */
+    display: none; /* hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+  
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 6rem;
+    color: #fff;
+}
+
+body {
+    background-color: black;
+    color: #fff;
+    margin: 0.5rem;
+    font-family: Aptos, sans-serif;
+}
+
+.site-header {
+    text-align: center;
+    margin-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #fff;
+}
+
+.site-header h1 {
+    font-family: 'AkayaKanadaka', sans-serif;
+    font-size: 2rem;
+    margin: 0;
+    color: #fff;
+}
+
+.content-container {
+    background-color: #fff;
+    color: #000;
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.upload-area {
+    border: 2px dashed black;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #fff;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    color: black;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.upload-info {
+    color: #666;
+    line-height: 1.5;
+}
+
+.upload-area:hover {
+    background-color: #000;
+    color: #fff;
+}
+
+.preview-container {
+    border: 2px dashed #000;
+    border-radius: 10px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-thumbnail {
+    width: 100%;            
+    height: 100%;           
+    object-fit: contain;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: none;
+  }
+  
+  .preview-thumbnail:hover {
+    transform: scale(1.02);
+    border: none;
+  }
+
+#imageModal .modal-content {
+    background-color: #fff;
+    color: #000;
+}
+
+#fullSizePreview {
+    max-height: 80vh;
+    object-fit: contain;
+}
+
+.result-box {
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.result-box h2 {
+    font-weight: bold;
+}
+
+/* Set initial opacity for fade-in elements on the result page (if you wish to use CSS transitions) */
+#userImage,
+#resultText {
+    opacity: 1;
+    transition: opacity 1.5s ease-out;
+}
+
+.result-image-zone {
+    border: 1px solid #ccc; /* Thin light grey border */
+    padding: 5px;
+    border-radius: 10px;
+    display: block;         /* Block element for centering */
+    margin: 0 auto 1rem;     /* Center horizontally and add bottom margin */
+    text-align: center;     /* Ensure inner content (the image) is centered */
+  }
+
+.btn-primary {
+    background-color: #000;
+    border-color: #000;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #fff;
+    border-color: #000;
+    color: #000;
+}
+
+.authentic {
+    color: #008000;
+    font-weight: bold;
+}
+
+.fraudulent {
+    color: #e60000;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .content-container {
+        margin: 1rem;
+        padding: 1rem;
+    }
+}
