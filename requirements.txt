@@ -7,16 +7,13 @@ pillow>=9.0.0
 python-magic>=0.4.27
 
 # AI and Machine Learning
-tensorflow>=2.15.0
-torch>=2.1.0
-torchvision>=0.16.0
-transformers>=4.37.0
-diffusers>=0.25.0
+torch>=1.12.0
+torchvision>=0.13.0
 
 # Data Processing
-numpy>=1.24.0
-pandas>=2.0.0
-scipy>=1.10.0
+numpy>=1.20.0
+pandas>=1.4.0
+scipy>=1.8.0
 
 # Utilities
 python-dotenv>=1.0.0
