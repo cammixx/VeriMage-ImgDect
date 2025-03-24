@@ -166,18 +166,22 @@ def validate_image_quality(file_stream) -> tuple[bool, str]:
         
         # Check minimum dimensions
         if width < app.config['MIN_IMAGE_SIZE'][0] or height < app.config['MIN_IMAGE_SIZE'][1]:
-            return False, f"Image too small. Minimum size is {app.config['MIN_IMAGE_SIZE'][0]}x{app.config['MIN_IMAGE_SIZE'][1]} pixels"
+            return False, f"Image dimensions too small. Minimum size is {app.config['MIN_IMAGE_SIZE'][0]}x{app.config['MIN_IMAGE_SIZE'][1]} pixels. Your image is {width}x{height} pixels."
         
         # Check resolution if DPI info is available
         if dpi and dpi < app.config['MIN_RESOLUTION_DPI']:
-            return False, f"Image resolution too low. Minimum is {app.config['MIN_RESOLUTION_DPI']} DPI"
+            return False, f"Image resolution too low. Minimum is {app.config['MIN_RESOLUTION_DPI']} DPI. Your image has {dpi} DPI."
         
         file_stream.seek(0)  # Reset file pointer for subsequent operations
         return True, "Image meets quality requirements"
         
     except Exception as e:
         logger.error(f"Error validating image: {str(e)}")
-        return False, "Error validating image quality"
+        if "cannot identify image file" in str(e).lower():
+            return False, "The file is not a valid image or is corrupted."
+        elif "broken data stream" in str(e).lower() or "truncated" in str(e).lower():
+            return False, "The image file is incomplete or corrupted."
+        return False, "Error validating image. Please try another image."
 
 # API Routes
 @app.route('/')
@@ -196,6 +200,8 @@ def show_result(filename):
         # Get AI analysis results
         if ai_detector:
             detection_results = ai_detector.predict_image(filepath)
+            if not detection_results:
+                return jsonify({"error": "Failed to analyze the image. Please try again."}), 500
         else:
             detection_results = {
                 "classification": "Error: AI detector not initialized",
@@ -219,31 +225,36 @@ def upload_image():
     try:
         # Check if file was included in request
         if 'file' not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify({"error": "No file uploaded. Please select an image file."}), 400
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({"error": "Empty filename"}), 400
+            return jsonify({"error": "Empty filename. Please select an image file."}), 400
             
+        # Validate file type
         if not file or not allowed_file(file.filename):
-            return jsonify({"error": "Invalid file type. Allowed types are: " + 
-                          ", ".join(app.config['ALLOWED_EXTENSIONS'])}), 400
-            
+            allowed_extensions = ", ".join(app.config['ALLOWED_EXTENSIONS'])
+            return jsonify({
+                "error": f"Invalid file type. Allowed types are: {allowed_extensions}."
+            }), 400
+        
+        # Check file size (already handled by MAX_CONTENT_LENGTH but with a better error message)
+        max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+        
         # Validate image quality
         is_valid, message = validate_image_quality(file)
         if not is_valid:
             return jsonify({"error": message}), 400
         
         # Save the file
-        filename = secure_filename(file.filename)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
         try:
+            filename = secure_filename(file.filename)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
         except Exception as e:
             logger.error(f"Failed to save file: {str(e)}")
-            return jsonify({"error": "Failed to save uploaded file"}), 500
+            return jsonify({"error": "Failed to save the uploaded file. Please try again."}), 500
         
         # Redirect to result page
         return jsonify({
@@ -252,8 +263,28 @@ def upload_image():
         }), 200
             
     except Exception as e:
+        # Handle specific exceptions with better error messages
+        error_msg = "An internal error occurred. Please try again."
+        
+        # Try to parse the error for specific cases
+        error_str = str(e)
+        
+        # Request too large error 
+        if "Request Entity Too Large" in error_str:
+            max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+            error_msg = f"The uploaded file is too large. Maximum allowed size is {max_size_mb}MB."
+        
         logger.error(f"Error processing upload: {traceback.format_exc()}")
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": error_msg}), 500
+
+# Error handlers
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """Handle file size exceeded error"""
+    max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+    return jsonify({
+        "error": f"The uploaded file is too large. Maximum allowed size is {max_size_mb}MB."
+    }), 413
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_image():
@@ -290,6 +321,8 @@ def analyze_image():
         # Analyze the image
         if ai_detector:
             detection_results = ai_detector.predict_image(filepath)
+            if not detection_results:
+                return jsonify({"error": "Failed to analyze the image"}), 500
             return jsonify(detection_results), 200
         else:
             return jsonify({"error": "AI detector not initialized"}), 500
