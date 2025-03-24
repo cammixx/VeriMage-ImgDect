@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // ----- Code for the Index Page (Upload Form) -----
+    // ----- Code for the Index Page  -----
     const uploadForm = document.getElementById("uploadForm");
     if (uploadForm) {
         const uploadBox = document.querySelector(".upload-area");
@@ -60,8 +60,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 formData.append('file', fileInput.files[0]);
                 
-                // Submit to our Flask API
-                const response = await fetch('/upload', {
+                // Submit to Flask API
+                const response = await fetch('/uploads', {
                     method: 'POST', 
                     body: formData
                 });
