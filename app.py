@@ -5,6 +5,10 @@ import logging
 from PIL import Image
 import traceback  # Added for better error tracking
 import datetime
+import torch
+import torchvision.transforms as transforms
+import torch.nn.functional as F
+from torchvision import models
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -25,51 +29,111 @@ app.config.update(
     MIN_RESOLUTION_DPI=72,  # Minimum image resolution
     
     # AI Model settings
-    MODEL_CACHE_DIR='models'  # Where to cache AI models
+    MODEL_CACHE_DIR='models',  # Where to cache AI models
+    NOTEBOOK_PATH='aiImage-realImage-classification.ipynb'  # Path to the notebook
 )
 
-class AI_Detector:
-    """Temporary placeholder for the AI Detector class that will be replaced with actual implementation"""
+class AIImageDetector:
+    """Implements AI-generated image detection without depending on the notebook"""
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-
-    def analyze_image_metadata(self, image_path):
-        """Analyze basic image metadata"""
+        self.model = None
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.data_transform = None
+        self.class_names = {0: 'AI-generated Image', 1: 'Real Image'}
+        
+        # Initialize the model
+        self._load_model()
+    
+    def _load_model(self):
+        """Load and prepare the model"""
         try:
-            with Image.open(image_path) as img:
-                return {
-                    "format": img.format,
-                    "size": img.size,
-                    "mode": img.mode,
-                    "dpi": img.info.get('dpi', 'Not available'),
-                    "filename": os.path.basename(image_path)
-                }
+            # Use a pre-trained ResNet model
+            self.model = models.resnet50(pretrained=True)
+            
+            # Modify the final layer for binary classification
+            num_features = self.model.fc.in_features
+            self.model.fc = torch.nn.Linear(num_features, 2)  # 2 classes: AI and Real
+            
+            # Set up the data transformation
+            self.data_transform = transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
+            
+            # Move the model to the appropriate device
+            self.model = self.model.to(self.device)
+            
+            # Set the model to evaluation mode
+            self.model.eval()
+            
+            self.logger.info("Successfully initialized the model")
         except Exception as e:
-            self.logger.error(f"Error analyzing image metadata: {str(e)}")
+            self.logger.error(f"Error loading model: {str(e)}")
+            self.logger.error(traceback.format_exc())
+            raise
+    
+    def predict_image(self, image_path):
+        """Predict if an image is AI-generated or real"""
+        try:
+            # Open the image and convert it to RGB
+            image = Image.open(image_path).convert("RGB")
+            
+            # Apply the transformations
+            image_tensor = self.data_transform(image).unsqueeze(0)  # Add batch dimension
+            
+            # Move the image tensor to the correct device (CPU or GPU)
+            image_tensor = image_tensor.to(self.device)
+            
+            # We don't have trained weights, so this is a demonstration
+            # For a real implementation, you'd load weights from a trained model
+            
+            # Create a prediction that simulates AI detection
+            # This is just a placeholder since we don't have actual trained weights
+            # In a real implementation, you would get predictions from a trained model
+            import random
+            
+            # Simulate AI probability with random value for demonstration
+            ai_prob = random.uniform(0, 1)
+            
+            # Get the probability of the image being AI-generated
+            ai_image_prob = ai_prob * 100  # Convert to percentage
+            
+            # Determine the classification based on the probability
+            prediction = self.class_names[0] if ai_image_prob > 50 else self.class_names[1]
+            
+            return {
+                "classification": prediction,
+                "ai_probability": ai_image_prob,
+                "real_probability": 100 - ai_image_prob,
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "image_metadata": self._get_image_metadata(image_path, image),
+                "note": "This is a demonstration using random predictions. In a production environment, this would use a trained model."
+            }
+        except Exception as e:
+            self.logger.error(f"Error predicting image: {str(e)}")
+            self.logger.error(traceback.format_exc())
             return None
-
-    def detect(self, image_path):
-        """Process image and return detection report
-        
-        Args:
-            image_path (str): Path to the image file
-            
-        Returns:
-            dict: Comprehensive detection report including:
-                - Image metadata
-                - AI generation analysis
-                - Manipulation detection
-                - Confidence scores
-        """
-        metadata = self.analyze_image_metadata(image_path)
-        
-        # This is a placeholder report structure that will be replaced with actual AI analysis
+    
+    def _get_image_metadata(self, image_path, image):
+        """Get basic metadata about the image"""
         return {
-            
+            "format": image.format,
+            "size": image.size,
+            "mode": image.mode,
+            "filename": os.path.basename(image_path)
         }
 
-# Initialize the placeholder detector
-detector = AI_Detector()
+# Initialize AI detector
+try:
+    ai_detector = AIImageDetector()
+    logger.info("AI Detector initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize AI Detector: {str(e)}")
+    logger.error(traceback.format_exc())
+    ai_detector = None
 
 def allowed_file(filename: str) -> bool:
     """Check if the uploaded file has an allowed extension.
@@ -113,7 +177,7 @@ def validate_image_quality(file_stream) -> tuple[bool, str]:
         
     except Exception as e:
         logger.error(f"Error validating image: {str(e)}")
-        return False, "Error validating image quality"
+        return False, "Error validating image quality. Please check if the file is a valid image."
 
 # API Routes
 @app.route('/')
@@ -129,8 +193,17 @@ def show_result(filename):
         if not os.path.exists(filepath):
             return jsonify({"error": "File not found"}), 404
             
-        # Get placeholder results
-        detection_results = detector.detect(filepath)
+        # Get AI analysis results
+        if ai_detector:
+            detection_results = ai_detector.predict_image(filepath)
+        else:
+            detection_results = {
+                "classification": "Error: AI detector not initialized",
+                "ai_probability": 0,
+                "real_probability": 0,
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "error": "AI detector model failed to load"
+            }
         
         return render_template('result.html', 
                              filename=filename, 
@@ -146,15 +219,25 @@ def upload_image():
     try:
         # Check if file was included in request
         if 'file' not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify({"error": "No file selected. Please select an image to upload."}), 400
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({"error": "Empty filename"}), 400
+            return jsonify({"error": "No file selected. Please select an image to upload."}), 400
+        
+        # Check file size before loading it
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)  # Reset file position
+        
+        # Check if file is too large (compare with MAX_CONTENT_LENGTH)
+        if file_size > app.config['MAX_CONTENT_LENGTH']:
+            max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+            return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
             
         if not file or not allowed_file(file.filename):
-            return jsonify({"error": "Invalid file type. Allowed types are: " + 
-                          ", ".join(app.config['ALLOWED_EXTENSIONS'])}), 400
+            allowed_extensions = ', '.join(app.config['ALLOWED_EXTENSIONS'])
+            return jsonify({"error": f"Invalid file type. Only {allowed_extensions} files are allowed."}), 400
             
         # Validate image quality
         is_valid, message = validate_image_quality(file)
@@ -170,7 +253,7 @@ def upload_image():
             file.save(filepath)
         except Exception as e:
             logger.error(f"Failed to save file: {str(e)}")
-            return jsonify({"error": "Failed to save uploaded file"}), 500
+            return jsonify({"error": "Failed to save uploaded file. Please try again."}), 500
         
         # Redirect to result page
         return jsonify({
@@ -179,19 +262,85 @@ def upload_image():
         }), 200
             
     except Exception as e:
+        error_message = str(e)
+        
+        # Check for common errors and provide user-friendly messages
+        if "Request Entity Too Large" in error_message:
+            max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+            return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
+        
         logger.error(f"Error processing upload: {traceback.format_exc()}")
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": "An error occurred while processing your upload. Please try again."}), 500
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_image():
-    # Handle file upload from frontend
-    # Process image
-    # Return results in JSON format
+    """API endpoint for image analysis"""
+    try:
+        # Check if file was included in request
+        if 'file' not in request.files:
+            return jsonify({"error": "No file selected. Please select an image to upload."}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected. Please select an image to upload."}), 400
+            
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)  # Reset file position
+        
+        # Check if file is too large
+        if file_size > app.config['MAX_CONTENT_LENGTH']:
+            max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+            return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
+            
+        if not file or not allowed_file(file.filename):
+            allowed_extensions = ', '.join(app.config['ALLOWED_EXTENSIONS'])
+            return jsonify({"error": f"Invalid file type. Only {allowed_extensions} files are allowed."}), 400
+        
+        # Validate image quality
+        is_valid, message = validate_image_quality(file)
+        if not is_valid:
+            return jsonify({"error": message}), 400
+        
+        # Save the file temporarily
+        filename = secure_filename(file.filename)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        try:
+            file.save(filepath)
+        except Exception as e:
+            logger.error(f"Failed to save file: {str(e)}")
+            return jsonify({"error": "Failed to save uploaded file. Please try again."}), 500
+        
+        # Analyze the image
+        if ai_detector:
+            detection_results = ai_detector.predict_image(filepath)
+            return jsonify(detection_results), 200
+        else:
+            return jsonify({"error": "AI detector not initialized. Please try again later."}), 500
+            
+    except Exception as e:
+        error_message = str(e)
+        
+        # Check for specific errors
+        if "Request Entity Too Large" in error_message:
+            max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+            return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
+            
+        logger.error(f"Error analyzing image: {traceback.format_exc()}")
+        return jsonify({"error": "An error occurred while analyzing your image. Please try again."}), 500
+
+# Custom error handler for 413 Request Entity Too Large
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
+    return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
 
 if __name__ == '__main__':
     # Ensure required directories exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['MODEL_CACHE_DIR'], exist_ok=True)
     
     # Start the Flask development server
     app.run(debug=True)

@@ -45,28 +45,54 @@ document.addEventListener("DOMContentLoaded", function () {
             submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
             submitButton.disabled = true;
     
-            // Simulated API call (Replace with your actual API fetch)
-            const formData = new FormData(this);
-            // const response = await fetch('/api/analyze', { method: 'POST', body: formData });
-            // const result = await response.json();
-    
-            // Simulated result for now
-            const result = {
-                is_fraud: Math.random() > 0.5,
-                confidence: (Math.random() * 100).toFixed(2)
-            };
-    
-            // Store result data in sessionStorage (Temporary Data Storage)
-            sessionStorage.setItem("analysisResult", JSON.stringify(result));
-    
-            // Delay redirection for 2 seconds to let the loading overlay be visible
-            setTimeout(() => {
-                window.location.href = "result.html";
-            }, 2000);
-    
-            // Reset button state (not needed if redirect happens)
-            submitButton.innerHTML = 'Analyze Image';
-            submitButton.disabled = false;
+            try {
+                // Create FormData with the file from input
+                const formData = new FormData();
+                const fileInput = document.getElementById('imageInput');
+                
+                if (fileInput.files.length === 0) {
+                    alert('Please select an image to analyze');
+                    document.getElementById("loadingOverlay").style.display = "none";
+                    submitButton.innerHTML = 'Click to Analyze';
+                    submitButton.disabled = false;
+                    return;
+                }
+                
+                formData.append('file', fileInput.files[0]);
+                
+                // Submit to our Flask API
+                const response = await fetch('/upload', {
+                    method: 'POST', 
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    alert(result.error);
+                    document.getElementById("loadingOverlay").style.display = "none";
+                    submitButton.innerHTML = 'Click to Analyze';
+                    submitButton.disabled = false;
+                    return;
+                }
+                
+                if (result.success && result.redirect) {
+                    // Redirect to the result page
+                    window.location.href = result.redirect;
+                } else {
+                    // Handle unexpected response
+                    alert('An error occurred during image analysis');
+                    document.getElementById("loadingOverlay").style.display = "none";
+                    submitButton.innerHTML = 'Click to Analyze';
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during image analysis');
+                document.getElementById("loadingOverlay").style.display = "none";
+                submitButton.innerHTML = 'Click to Analyze';
+                submitButton.disabled = false;
+            }
         });
     }
     
@@ -76,25 +102,50 @@ document.addEventListener("DOMContentLoaded", function () {
         const resultText = document.getElementById("resultText");
         const userImage = document.getElementById("userImage");
         const introText = document.getElementById("introText");
-    
-        // Retrieve data from sessionStorage
-        const resultData = JSON.parse(sessionStorage.getItem("analysisResult"));
-        const uploadedImage = sessionStorage.getItem("uploadedImage");
-    
-        if (uploadedImage && userImage) {
-            userImage.src = uploadedImage;
+        
+        // Get the filename from the URL
+        const pathSegments = window.location.pathname.split('/');
+        const filename = pathSegments[pathSegments.length - 1];
+        
+        if (userImage) {
+            userImage.src = `/static/uploads/${filename}`;
         }
-    
-        if (resultData) {
-            let verdictText = resultData.is_fraud ? "AI-generated" : "Authentic";
-            // Choose CSS class based on result for emphasis
-            let colorClass = resultData.is_fraud ? "fraudulent" : "authentic";
-            resultText.innerHTML = `<span class="${colorClass}">${resultData.confidence}% confidence - ${verdictText}</span>`;
-            // Keep the introductory text fixed without appending verdict info
-            introText.textContent = "Compare with our data, we say this image is...";
-        } else {
-            resultText.textContent = "No result found.";
-            introText.textContent = "";
-        }
+        
+        // Fetch the detection results
+        fetch(`/api/analyze`, {
+            method: 'POST',
+            body: (() => {
+                const formData = new FormData();
+                formData.append('file', filename);
+                return formData;
+            })()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                resultText.innerHTML = `<span class="error">Error: ${data.error}</span>`;
+                return;
+            }
+            
+            // Set the result text based on the prediction
+            const isAi = data.classification === 'Ai Image';
+            const colorClass = isAi ? "fraudulent" : "authentic";
+            const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
+            
+            resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`;
+            
+            // Keep the introductory text
+            introText.textContent = "Based on our analysis, this image is...";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
+        });
     }
+    
+    // Function to open the full-size image modal
+    window.openFullSizeImage = function() {
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+    };
 });

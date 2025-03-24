@@ -6,34 +6,62 @@ The **Fraud Detection** project aims to detect AI-generated images and predict t
 
 ```
 FRAUD_DETECTION/
-├── ai_modules/           # AI detection implementation
-│   └── detector.py      # Core detection logic
-├── static/              # Static files
-│   └── uploads/         # Uploaded images storage
-├── templates/           # HTML templates
-│   ├── index.html      # Upload page
-│   └── result.html     # Results display
-├── models/             # AI model storage
-├── dataset/           # Training and testing datasets
-├── app.py             # Flask application
-└── requirements.txt   # Project dependencies
+├── static/
+│   ├── uploads/          # Store uploaded images
+│   ├── styles.css        # CSS styles for the application
+│   └── script.js         # JavaScript for frontend functionality
+├── templates/           
+│   ├── index.html        # Upload image interface
+│   └── result.html       # Results display page
+├── dataset/             # Training and testing datasets
+├── aiImage-realImage-classification.ipynb  # Reference AI detection model notebook
+├── app.py               # Flask application with AI model implementation
+├── requirements.txt     # Project dependencies
+└── README.md            # Project documentation
 ```
+
+## Implementation Approach
+
+This project provides a web application for AI-generated image detection with the following components:
+
+1. **Pretrained Model Framework**: The application uses a ResNet-50 architecture as the foundation for the image classification model. In a production environment, this would be fully trained and fine-tuned.
+
+2. **Demonstration Mode**: Currently, the system operates in demonstration mode, generating simulated predictions to showcase the user interface and functionality without requiring complex model training.
+
+3. **Web Interface**: A clean and responsive web interface allows users to upload images and view detection results, including confidence scores and image metadata.
+
+4. **Future Integration Path**: The project is structured to easily integrate a fully trained model, either from the reference notebook or from a dedicated model training pipeline.
 
 ## Usage
 
 1. Access the web interface through your browser
-2. Upload an image for analysis
+2. Upload an image for analysis (supported formats: JPG, JPEG, PNG)
 3. View detailed results including:
-   - Image metadata analysis
-   - Visual manipulation detection
-   - AI generation patterns
-   - Recommendations and reliability scores
+   - Classification (AI-generated or Real image)
+   - Confidence score
+   - Image metadata
 
-## Development
+## Installation and Setup
 
-- Frontend: Located in `templates/` directory
-- Backend: Main application logic in `app.py`
-- AI Module: Implementation in `ai_modules/detector.py`
+1. Clone the repository
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Run the application:
+   ```
+   python app.py
+   ```
+4. Access the application in your browser at `http://localhost:5000`
+
+## Model Details
+
+The demonstration model is based on a pre-trained ResNet architecture. Key features:
+
+- Uses a ResNet50 architecture 
+- Binary classification (AI-generated vs Real)
+- Returns simulated probability scores
+- Preprocesses images to standardized size and format
 
 ## Dataset
 
@@ -46,63 +74,25 @@ The dataset is split into two main categories, and it is used to train and evalu
 
 ## Data Preprocessing
 
-In the Fraud Detection project, the following data preprocessing steps are applied to ensure the images are ready for training the model:
+The following data preprocessing steps are applied to ensure the images are ready for analysis:
 
-### 1. Data Loading & Path Setup
-
-The dataset is loaded directly from Kaggle, which includes two directories:
-
-- `AiArtData`: Contains AI-generated images (label 0).
-- `RealArt`: Contains real images (label 1).
-
-The image paths and labels are organized within the project structure to facilitate easy access during training.
-
-### 2. Image Filtering & Labeling
-
-To ensure data consistency, the **make_label()** function is used to:
-
-- Read image files from both the `AiArtData` and `RealArt` directories.
-- Filter out unsupported image formats (only **.jpg**, **.jpeg**, and **.png** files are accepted).
-- Assign labels: **0** for AI-generated images and **1** for real images.
-
-The image paths and corresponding labels are then stored in a **Pandas DataFrame** for easy manipulation.
-
-### 3. Train-Test Split
-
-To evaluate the model's performance, the dataset is split into:
-
-- **80% Training Set**
-- **20% Validation Set**
-
-Stratified sampling is applied to maintain class balance, ensuring that both real and AI-generated images are evenly distributed in both the training and validation sets.
-
-### 4. Image Transformations
+### Image Transformations
 
 Various image transformations are applied to enhance the model's robustness and improve performance:
 
 #### Training Set:
 - **Random Resized Crop (224x224)**: Randomly crops the image to a 224x224 size to introduce variability.
 - **Random Horizontal Flip**: Randomly flips the image horizontally, improving generalization.
-- **Normalization**: Standardizes the image pixel values to a range of 0-1.
+- **Normalization**: Standardizes the image pixel values.
 
-#### Validation Set:
+#### Validation & Testing:
 - **Resize (256x256)**: Resizes the image to 256x256 pixels to ensure consistent dimensions.
 - **Center Crop (224x224)**: Crops the central region of the image to 224x224 pixels.
-- **Normalization**: Normalizes the image similar to the training set for consistent input.
+- **Normalization**: Normalizes the image for consistent input.
 
-### 5. Custom Dataset Class
+## Technical Requirements
 
-A custom **PyTorch Dataset** class is created to streamline the data pipeline. This class is responsible for:
-
-- Loading images from disk.
-- Applying the appropriate transformations (e.g., resizing, cropping, flipping).
-- Returning the image tensor along with the corresponding label for model training.
-
-### 6. Dataloader Setup
-
-To efficiently load data during training, the images are wrapped in **PyTorch DataLoader** objects. These loaders provide:
-
-- **Batch size = 4**: A batch size of 4 is chosen to ensure efficient memory usage during training.
-- **Multi-threaded loading (`num_workers=2`)**: Multiple workers are used for parallel data loading, ensuring faster processing of images.
-
-By setting up these preprocessing and data loading steps, we ensure that the model receives well-processed, consistent input data, which is crucial for achieving high performance in AI-generated image detection.
+- Python 3.8+
+- PyTorch 1.12.0+
+- Flask 2.0.0+
+- Pillow 9.0.0+
