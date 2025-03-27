@@ -5,13 +5,12 @@ import logging
 from PIL import Image
 import traceback  # Added for better error tracking
 import datetime
-import joblib
 import numpy as np
 from flask_cors import CORS
 import base64
-from sklearn.preprocessing import StandardScaler
-import re
-from urllib.parse import unquote
+import torch
+import torchvision.models as models
+from torchvision import transforms
 from scipy.stats import entropy
 import math
 from scipy import ndimage
@@ -46,26 +45,19 @@ app.config.update(
     MIN_RESOLUTION_DPI=72,  # Minimum image resolution
     
     # AI Model settings
-    MODEL_PATH='ai_model.pkl',  # Path to the trained model
+    MODEL_PATH='trained_model.pth',  # Path to the trained model
 )
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Set the device (GPU if available, otherwise CPU)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Check UPLOAD_FOLDER path consistency
-print(f"Upload folder path: {app.config['UPLOAD_FOLDER']}")
-# Should output something like:
-# Upload folder path: /your/project/path/static/uploads
-
-# Add route to serve uploaded files
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-# Add static file handling
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory(os.path.join(app.root_path, 'static'), filename)
+# Define the data transformations
+data_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
 class AIImageDetector:
     """Implements AI-generated image detection using the trained model"""
@@ -85,14 +77,18 @@ class AIImageDetector:
             if not os.path.exists(model_path):
                 self.logger.error(f"Model file not found: {model_path}")
                 raise FileNotFoundError(f"Model file not found: {model_path}")
-                
-            # Load the trained model
-            self.logger.info(f"Loading model from: {model_path}")
-            self.model = joblib.load(model_path)
-            self.logger.info(f"Successfully loaded model of type: {type(self.model)}")
             
-            # Initialize scaler
-            self.scaler = StandardScaler()
+            # Initialize the model
+            self.model = models.resnet18(weights='IMAGENET1K_V1')
+            num_classes = 2
+            self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+            self.model = self.model.to(device)
+            
+            # Load the saved model state
+            self.model.load_state_dict(torch.load(model_path, map_location=device))
+            self.model.eval()
+            
+            self.logger.info(f"Successfully loaded model of type: {type(self.model)}")
             return True
         except Exception as e:
             self.logger.error(f"Error loading model: {str(e)}")
@@ -102,14 +98,9 @@ class AIImageDetector:
     def preprocess_image(self, image):
         """Preprocess the image for model input"""
         try:
-            # Resize and convert to array
-            image = image.resize((224, 224))
-            img_array = np.array(image)
-            
-            # Flatten and scale the image
-            flattened = img_array.flatten().reshape(1, -1)
-            scaled = self.scaler.fit_transform(flattened)
-            return scaled
+            # Apply the transformations
+            image_tensor = data_transform(image).unsqueeze(0)
+            return image_tensor.to(device)
         except Exception as e:
             self.logger.error(f"Error preprocessing image: {str(e)}")
             raise
@@ -121,15 +112,16 @@ class AIImageDetector:
             image = Image.open(image_path).convert("RGB")
             processed_image = self.preprocess_image(image)
             
-            # Get prediction probabilities
-            predictions = self.model.predict_proba(processed_image)
-            
-            # Get probabilities
-            ai_probability = predictions[0][0] * 100
-            real_probability = predictions[0][1] * 100
+            # Get prediction
+            with torch.no_grad():
+                outputs = self.model(processed_image)
+                probabilities = torch.softmax(outputs, dim=1)
+                ai_probability = probabilities[0][0].item() * 100
+                real_probability = probabilities[0][1].item() * 100
+                _, predicted_class = torch.max(outputs, 1)
             
             # Determine classification based on highest probability
-            classification = self.class_names[0] if ai_probability > 50 else self.class_names[1]
+            classification = self.class_names[predicted_class.item()]
             
             return {
                 "classification": classification,
@@ -137,7 +129,7 @@ class AIImageDetector:
                 "real_probability": real_probability,
                 "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "image_metadata": self._get_image_metadata(image_path, image),
-                "note": "Analysis performed using trained deep learning model.",
+                "note": "Analysis performed using trained PyTorch model.",
                 "home_url": url_for('index')
             }
         except Exception as e:
@@ -172,20 +164,24 @@ except Exception as e:
             # Create a simple model wrapper
             class SimpleModelWrapper:
                 def __init__(self):
-                    self.model = joblib.load(model_path)
-                    self.scaler = StandardScaler()
-                    self.class_names = {0: 'AI-generated Image', 1: 'Real Image'}
+                    self.model = models.resnet18(weights='IMAGENET1K_V1')
+                    num_classes = 2
+                    self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
+                    self.model = self.model.to(device)
+                    self.model.load_state_dict(torch.load(model_path, map_location=device))
+                    self.model.eval()
                     logger.info(f"Simple model wrapper created with model type: {type(self.model)}")
                 
                 def predict_image(self, image_path):
                     image = Image.open(image_path).convert("RGB")
-                    image = image.resize((224, 224))
-                    img_array = np.array(image).flatten().reshape(1, -1)
-                    scaled = self.scaler.fit_transform(img_array)
-                    predictions = self.model.predict_proba(scaled)
-                    ai_prob = predictions[0][0] * 100
-                    real_prob = predictions[0][1] * 100
-                    classification = self.class_names[0] if ai_prob > 50 else self.class_names[1]
+                    processed_image = self.preprocess_image(image)
+                    with torch.no_grad():
+                        outputs = self.model(processed_image)
+                        probabilities = torch.softmax(outputs, dim=1)
+                        ai_prob = probabilities[0][0].item() * 100
+                        real_prob = probabilities[0][1].item() * 100
+                        _, predicted_class = torch.max(outputs, 1)
+                    classification = "AI-generated Image" if ai_prob > 50 else "Real Image"
                     return {
                         "classification": classification,
                         "ai_probability": ai_prob,
@@ -244,6 +240,21 @@ def validate_image_quality(file_stream) -> tuple[bool, str]:
     except Exception as e:
         logger.error(f"Error validating image: {str(e)}")
         return False, "Error validating image quality. Please check if the file is a valid image."
+
+def delete_previous_images():
+    """Delete all previous images in the upload folder"""
+    try:
+        uploads_dir = app.config['UPLOAD_FOLDER']
+        for filename in os.listdir(uploads_dir):
+            if allowed_file(filename):
+                file_path = os.path.join(uploads_dir, filename)
+                os.remove(file_path)
+                logger.info(f"Deleted previous image: {filename}")
+    except Exception as e:
+        logger.error(f"Error deleting previous images: {str(e)}")
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # API Routes
 @app.route('/')
@@ -342,6 +353,9 @@ def upload_image():
         if not is_valid:
             return jsonify({"error": message}), 400
         
+        # Delete previous images before saving the new one
+        delete_previous_images()
+        
         # Save the file
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -433,23 +447,27 @@ def analyze_image():
                 
             # Load the model
             logger.info(f"Loading model from {model_path}")
-            model = joblib.load(model_path)
+            model = models.resnet18(weights='IMAGENET1K_V1')
+            num_classes = 2
+            model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+            model = model.to(device)
+            model.load_state_dict(torch.load(model_path, map_location=device))
+            model.eval()
             
             # Load and preprocess the image
             image = Image.open(filepath).convert("RGB")
             image = image.resize((224, 224))
-            img_array = np.array(image).flatten().reshape(1, -1)
-            
-            # Scale the data
-            scaler = StandardScaler()
-            scaled_data = scaler.fit_transform(img_array)
+            img_tensor = data_transform(image).unsqueeze(0).to(device)
             
             # Get predictions
-            predictions = model.predict_proba(scaled_data)
+            with torch.no_grad():
+                outputs = model(img_tensor)
+                probabilities = torch.softmax(outputs, dim=1)
+                ai_probability = probabilities[0][0].item() * 100
+                real_probability = probabilities[0][1].item() * 100
+                _, predicted_class = torch.max(outputs, 1)
             
             # Format results
-            ai_probability = predictions[0][0] * 100
-            real_probability = predictions[0][1] * 100
             classification = "AI-generated Image" if ai_probability > 50 else "Real Image"
             
             # Create result object
@@ -464,7 +482,7 @@ def analyze_image():
                     "size": image.size,
                     "mode": image.mode
                 },
-                "note": "Analysis performed using trained machine learning model.",
+                "note": "Analysis performed using trained PyTorch model.",
                 "home_url": url_for('index')
             }
             
