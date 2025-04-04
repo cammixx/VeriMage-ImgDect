@@ -133,10 +133,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
             
             resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`;
-            
             // Keep the introductory text
-            introText.textContent = "Based on our analysis, this image is...";
+            // introText.textContent = "Based on our analysis, this image is...";
         })
+        
         .catch(error => {
             console.error('Error:', error);
             resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
