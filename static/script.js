@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             
             // Set the result text based on the prediction
-            const isAi = data.classification === 'Ai Image';
+            const isAi = data.classification === 'AI-generated Image';
             const colorClass = isAi ? "fraudulent" : "authentic";
             const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
             

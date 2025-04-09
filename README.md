@@ -52,16 +52,16 @@ This project provides a web application for AI-generated image detection with th
    ```
    python app.py
    ```
-4. Access the application in your browser at `http://localhost:5000`
+4. Access the application in your browser at `http://localhost:5500`
 
 ## Model Details
 
 The demonstration model is based on a pre-trained ResNet architecture. Key features:
 
-- Uses a ResNet50 architecture 
+- Uses a ResNet18 architecture 
 - Binary classification (AI-generated vs Real)
 - Returns simulated probability scores
-- Preprocesses images to standardized size and format
+- Classifies the image based on probability scores
 
 ## Dataset
 

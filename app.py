@@ -115,10 +115,15 @@ class AIImageDetector:
             # Get prediction
             with torch.no_grad():
                 outputs = self.model(processed_image)
+                print("Raw outputs (logits):", outputs)
                 probabilities = torch.softmax(outputs, dim=1)
+                print("Probabilities after softmax:", probabilities)
                 ai_probability = probabilities[0][0].item() * 100
                 real_probability = probabilities[0][1].item() * 100
+                print("AI PROB:",ai_probability)
+                print("REAL PROB:",real_probability)
                 _, predicted_class = torch.max(outputs, 1)
+                print("Predicted class index:", predicted_class.item())
             
             # Determine classification based on highest probability
             classification = self.class_names[predicted_class.item()]
@@ -177,10 +182,15 @@ except Exception as e:
                     processed_image = self.preprocess_image(image)
                     with torch.no_grad():
                         outputs = self.model(processed_image)
+                        print("Raw outputs (logits):", outputs)
                         probabilities = torch.softmax(outputs, dim=1)
+                        print("Probabilities after softmax:", probabilities)
                         ai_prob = probabilities[0][0].item() * 100
                         real_prob = probabilities[0][1].item() * 100
+                        print("AI PROB:",ai_prob)
+                        print("REAL PROB:",real_prob)
                         _, predicted_class = torch.max(outputs, 1)
+                        print("Predicted class index:", predicted_class.item())
                     classification = "AI-generated Image" if ai_prob > 50 else "Real Image"
                     return {
                         "classification": classification,
@@ -462,10 +472,15 @@ def analyze_image():
             # Get predictions
             with torch.no_grad():
                 outputs = model(img_tensor)
+                print("Raw outputs (logits):", outputs)
                 probabilities = torch.softmax(outputs, dim=1)
+                print("Probabilities after softmax:", probabilities)
                 ai_probability = probabilities[0][0].item() * 100
                 real_probability = probabilities[0][1].item() * 100
+                print("AI PROB:",ai_probability)
+                print("REAL PROB:",real_probability)
                 _, predicted_class = torch.max(outputs, 1)
+                print("Predicted class index:", predicted_class.item())
             
             # Format results
             classification = "AI-generated Image" if ai_probability > 50 else "Real Image"
