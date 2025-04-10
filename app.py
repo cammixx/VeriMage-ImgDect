@@ -8,23 +8,9 @@ import numpy as np
 import torch
 import torchvision.models as models
 from torchvision import transforms
-import cv2
-
-import matplotlib
-matplotlib.use('Agg')  # Must be set before importing pyplot
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.colors import Normalize
-
-import os
-import json
-import time
-import logging
-import traceback
-import datetime
-import base64
-from threading import Lock
-from queue import Queue
+from scipy.stats import entropy
+import math
+from scipy import ndimage
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -776,6 +762,17 @@ def navigate_home():
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
+def cleanup_on_exit():
+    """Delete all images in the upload folder on app shutdown."""
+    try:
+        delete_previous_images()
+        logger.info("Cleaned up images on app shutdown.")
+    except Exception as e:
+        logger.error(f"Error during cleanup on exit: {str(e)}")
+
+# Register the cleanup function to be called on exit
+atexit.register(cleanup_on_exit)
 
 if __name__ == '__main__':
     # Ensure required directories exist
