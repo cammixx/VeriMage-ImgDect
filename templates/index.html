@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FakeCatcher</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><circle cx='256' cy='256' r='33.49' fill='%2349a2a7'/><ellipse cx='256' cy='256' rx='140.674' ry='62.534' fill='%23fbf2e7'/><path d='M226.099 195.749a67.263 67.263 0 0 0 0 120.502 196.93 196.93 0 0 0 59.802 0 67.263 67.263 0 0 0 0-120.502 196.93 196.93 0 0 0-59.802 0z' fill='%2349a2a7'/></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='32' height='32'><rect width='512' height='512' fill='%2349a2a7'/><circle cx='256' cy='256' r='33.49' fill='%2349a2a7'/><ellipse cx='256' cy='256' rx='140.674' ry='62.534' fill='%23fbf2e7'/><path d='M226.099 195.749a67.263 67.263 0 0 0 0 120.502 196.93 196.93 0 0 0 59.802 0 67.263 67.263 0 0 0 0-120.502 196.93 196.93 0 0 0-59.802 0z' fill='%2349a2a7'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
@@ -50,8 +51,11 @@
   
   <!-- Loading overlay for analysis animation -->
   <div id="loadingOverlay" class="loading-overlay">
-    <div class="spinner-border" role="status">
-      <span class="visually-hidden">Processing...</span>
+    <div class="loading-content">
+      <div class="spinner-grow" role="status">
+        <span class="visually-hidden">Processing...</span>
+      </div>
+      <div class="percentage-text">0%</div>
     </div>
   </div>
 
