@@ -34,25 +34,38 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     
-        // Handle Form Submission and Redirect with Processing Overlay
+        // ----- Handle Form Submission and Redirect with Processing Overlay -----  
         uploadForm.addEventListener('submit', async function (e) {
             e.preventDefault();
     
             const submitButton = document.querySelector('button[type="submit"]');
+            const percentageText = document.querySelector('.percentage-text');
+            const loadingOverlay = document.getElementById("loadingOverlay");
+            
             // Show loading overlay on click
-            document.getElementById("loadingOverlay").style.display = "flex";
-    
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+            loadingOverlay.style.display = "flex";
+            submitButton.innerHTML = '<span class="spinner-grow spinner-grow-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
+            submitButton.classList.add('disabled');
             submitButton.disabled = true;
     
+            // Start percentage animation
+            let percentage = 0;
+            const interval = setInterval(() => {
+                percentage += 1;
+                if (percentage <= 100) {
+                    percentageText.textContent = `${percentage}%`;
+                }
+            }, 50); // Adjust speed by changing the interval
+
+            // ----- Handle Form Submission -----   
             try {
-                // Create FormData with the file from input
                 const formData = new FormData();
                 const fileInput = document.getElementById('imageInput');
                 
                 if (fileInput.files.length === 0) {
                     alert('Please select an image to analyze');
-                    document.getElementById("loadingOverlay").style.display = "none";
+                    clearInterval(interval);
+                    loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
                     return;
@@ -70,26 +83,46 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 if (result.error) {
                     alert(result.error);
-                    document.getElementById("loadingOverlay").style.display = "none";
+                    clearInterval(interval);
+                    loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
                     return;
                 }
                 
+                // ----- Handle Redirect -----  
                 if (result.success && result.redirect) {
+                    // Wait for percentage to reach 100%
+                    if (percentage < 100) {
+                        await new Promise(resolve => {
+                            const checkInterval = setInterval(() => {
+                                if (percentage >= 100) {
+                                    clearInterval(checkInterval);
+                                    resolve();
+                                }
+                            }, 10);
+                        });
+                    }
+                    
+                    // Show 100% for a moment before redirecting
+                    percentageText.textContent = "100%";
+                    await new Promise(resolve => setTimeout(resolve, 100)); 
+                    
                     // Redirect to the result page
                     window.location.href = result.redirect;
                 } else {
                     // Handle unexpected response
                     alert('An error occurred during image analysis');
-                    document.getElementById("loadingOverlay").style.display = "none";
+                    clearInterval(interval);
+                    loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred during image analysis');
-                document.getElementById("loadingOverlay").style.display = "none";
+                clearInterval(interval);
+                loadingOverlay.style.display = "none";
                 submitButton.innerHTML = 'Click to Analyze';
                 submitButton.disabled = false;
             }
@@ -127,16 +160,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             
-            // Set the result text based on the prediction
+            // ----- Set the result text based on the ai model prediction -----
             const isAi = data.classification === 'AI-generated Image';
             const colorClass = isAi ? "fraudulent" : "authentic";
             const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
             
-            resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`;
-            // Keep the introductory text
-            // introText.textContent = "Based on our analysis, this image is...";
-        })
-        
+            resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`; })
+
+        // ----- Handle Error -----
         .catch(error => {
             console.error('Error:', error);
             resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
