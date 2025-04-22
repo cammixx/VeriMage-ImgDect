@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512">
+
+  <rect width="512" height="512" fill="#49a2a7"/>
+  <circle cx="256" cy="256" r="33.49" fill="#49a2a7"/>
+  <ellipse cx="256" cy="256" rx="140.674" ry="62.534" fill="#fbf2e7"/>
+  
+  <path
+    d="M226.099 195.749a67.263 67.263 0 0 0 0 120.502 196.93 196.93 0 0 0 59.802 0 67.263 67.263 0 0 0 0-120.502 196.93 196.93 0 0 0-59.802 0z"
+    fill="#49a2a7"/>
+
+</svg>
