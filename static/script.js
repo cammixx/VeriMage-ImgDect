@@ -177,53 +177,69 @@ document.addEventListener("DOMContentLoaded", function () {
      // Add Find More button functionality
      const findMoreBtn = document.getElementById("findMoreBtn");
      if (findMoreBtn) {
-         findMoreBtn.addEventListener("click", function() {
-             // Show loading state
-             findMoreBtn.textContent = "Generating...";
-             findMoreBtn.disabled = true;
-             
-             // Get the current image filename
-             const pathSegments = window.location.pathname.split('/');
-             const filename = pathSegments[pathSegments.length - 1];
-             
-             // Call the API to generate Grad-CAM
-             fetch(`/api/grad-cam`, {
-                 method: 'POST',
-                 body: (() => {
-                     const formData = new FormData();
-                     formData.append('file', filename);
-                     return formData;
-                 })()
-             })
-             .then(response => response.json())
-             .then(data => {
-                 if (data.error) {
-                     alert(`Error: ${data.error}`);
-                     return;
-                 }
-                 
-                 // Display the Grad-CAM image
-                 const gradCamImg = document.createElement('img');
-                 gradCamImg.src = data.gradcam_url;
-                 gradCamImg.className = "img-fluid mt-3 mb-3";
-                 gradCamImg.alt = "Grad-CAM Visualization";
-                 
-                 // Insert the image below the confidence text
-                 resultText.parentNode.insertBefore(gradCamImg, resultText.nextSibling);
-                 
-                 // Reset button state
-                 findMoreBtn.textContent = "Find More";
-                 findMoreBtn.disabled = false;
-             })
-             .catch(error => {
-                 console.error('Error:', error);
-                 alert('Error generating visualization');
-                 findMoreBtn.textContent = "Find More";
-                 findMoreBtn.disabled = false;
-             });
-         });
-     }
-    
+        findMoreBtn.addEventListener("click", function() {
+            // Disable the button immediately to prevent double-clicks
+            this.disabled = true;
+            // Optionally change text to show processing
+            this.textContent = "Generating...";
+            
+            // Get the current image filename from URL or another source
+            const pathSegments = window.location.pathname.split('/');
+            const filename = pathSegments[pathSegments.length - 1];
+            
+            // Call the API to generate Grad-CAM
+            fetch('/api/grad-cam', {
+                method: 'POST',
+                body: (() => {
+                    const formData = new FormData();
+                    formData.append('file', filename);
+                    return formData;
+                })()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                    // Re-enable button on error
+                    findMoreBtn.disabled = false;
+                    findMoreBtn.textContent = "Find More";
+                    return;
+                }
+                
+                // Create or update the Grad-CAM container
+                let gradcamContainer = document.getElementById("gradcamContainer");
+                if (!gradcamContainer) {
+                    gradcamContainer = document.createElement("div");
+                    gradcamContainer.id = "gradcamContainer";
+                    gradcamContainer.className = "text-center mt-3";
+                    
+                    // Add container after result text
+                    const resultText = document.getElementById("resultText");
+                    resultText.parentNode.insertBefore(gradcamContainer, resultText.nextSibling);
+                }
+                
+                // Display the Grad-CAM visualization
+                gradcamContainer.innerHTML = `
+                    <h4>Prediction Explanation</h4>
+                    <img src="${data.gradcam_url}" class="img-fluid" alt="Grad-CAM Visualization">
+                `;
+                
+                // Important: EITHER hide the button completely
+                findMoreBtn.style.display = "none";
+                
+                // OR keep it disabled permanently
+                // findMoreBtn.disabled = true;
+                // findMoreBtn.textContent = "Analysis Complete";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Re-enable button on error
+                findMoreBtn.disabled = false;
+                findMoreBtn.textContent = "Find More";
+            });
+        });
+    }   
+        
     // Function to open the full-size image modal
     window.openFullSizeImage = function() {
         const modal = new bootstrap.Modal(document.getElementById('imageModal'));
