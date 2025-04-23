@@ -172,7 +172,57 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error('Error:', error);
             resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
         });
+
     }
+     // Add Find More button functionality
+     const findMoreBtn = document.getElementById("findMoreBtn");
+     if (findMoreBtn) {
+         findMoreBtn.addEventListener("click", function() {
+             // Show loading state
+             findMoreBtn.textContent = "Generating...";
+             findMoreBtn.disabled = true;
+             
+             // Get the current image filename
+             const pathSegments = window.location.pathname.split('/');
+             const filename = pathSegments[pathSegments.length - 1];
+             
+             // Call the API to generate Grad-CAM
+             fetch(`/api/grad-cam`, {
+                 method: 'POST',
+                 body: (() => {
+                     const formData = new FormData();
+                     formData.append('file', filename);
+                     return formData;
+                 })()
+             })
+             .then(response => response.json())
+             .then(data => {
+                 if (data.error) {
+                     alert(`Error: ${data.error}`);
+                     return;
+                 }
+                 
+                 // Display the Grad-CAM image
+                 const gradCamImg = document.createElement('img');
+                 gradCamImg.src = data.gradcam_url;
+                 gradCamImg.className = "img-fluid mt-3 mb-3";
+                 gradCamImg.alt = "Grad-CAM Visualization";
+                 
+                 // Insert the image below the confidence text
+                 resultText.parentNode.insertBefore(gradCamImg, resultText.nextSibling);
+                 
+                 // Reset button state
+                 findMoreBtn.textContent = "Find More";
+                 findMoreBtn.disabled = false;
+             })
+             .catch(error => {
+                 console.error('Error:', error);
+                 alert('Error generating visualization');
+                 findMoreBtn.textContent = "Find More";
+                 findMoreBtn.disabled = false;
+             });
+         });
+     }
     
     // Function to open the full-size image modal
     window.openFullSizeImage = function() {
