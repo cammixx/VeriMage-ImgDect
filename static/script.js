@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Disable button and show loading state
             findMoreBtn.disabled = true;
             findMoreBtn.textContent = "Generating...";
+            findMoreBtn.style.display = "none";
             
             // Get the current image filename from URL or path
             const pathSegments = window.location.pathname.split('/');
