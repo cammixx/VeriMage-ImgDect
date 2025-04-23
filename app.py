@@ -30,6 +30,7 @@ matplotlib.use('Agg')  # Use non-interactive backend
 from matplotlib import cm
 from matplotlib.colors import Normalize
 import os
+import time
 
 
 # Initialize Flask application
@@ -113,6 +114,7 @@ class AIImageDetector:
             raise
      # Grad-CAM generation function
     def generate_gradcam(self, image_path, alpha=0.5):
+    # Load fresh model instance each time
         self.model = models.resnet18(weights='IMAGENET1K_V1')
         num_classes = 2
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
@@ -121,17 +123,17 @@ class AIImageDetector:
         # Load the saved model state
         self.model.load_state_dict(torch.load(model_path, map_location=device))
         self.model.eval()
-    
+
         # Load and transform image
         image = Image.open(image_path).convert("RGB")
         transformed = data_transform(image).unsqueeze(0).to(device)
         transformed.requires_grad_()
-    
-        # Global variables to store activation and gradients
+
+        # Variables to store activation and gradients
         global activation, gradients
         activation = None
         gradients = None
-    
+
         # Hooks
         def save_activation_hook(m, i, o):
             global activation
@@ -140,12 +142,12 @@ class AIImageDetector:
         def save_gradient_hook(m, gi, go):
             global gradients
             gradients = go[0].detach()
-    
+
         # Register hooks
         final_conv = self.model.layer4[1].conv2
         handle1 = final_conv.register_forward_hook(save_activation_hook)
         handle2 = final_conv.register_full_backward_hook(save_gradient_hook)
-    
+
         try:
             # Forward pass
             output = self.model(transformed)
@@ -153,63 +155,73 @@ class AIImageDetector:
             pred_idx = torch.argmax(output).item()
             pred_label = self.class_names[pred_idx]
             confidence = probs[0][pred_idx].item() * 100
-        
+    
             # Backward pass
             self.model.zero_grad()
             output[0, pred_idx].backward()
-        
-            # Grad-CAM calculation
+    
+            # Grad-CAM calculation - NO IN-PLACE OPERATIONS!
             pooled_gradients = torch.mean(gradients, dim=[0, 2, 3])
-            for i in range(activation.shape[1]):
-                activation[:, i, :, :] *= pooled_gradients[i]
-                heatmap = torch.sum(activation, dim=1).squeeze()
-                heatmap = torch.clamp(heatmap, min=0).cpu().numpy()
-                heatmap = heatmap / np.max(heatmap)
         
+            # Create weighted activations without modifying original tensor
+            weighted_activations = activation * pooled_gradients[None, :, None, None]
+        
+            # Sum along the channel dimension to get heatmap
+            heatmap = torch.sum(weighted_activations, dim=1).squeeze()
+        
+            # Apply ReLU to the heatmap
+            heatmap = torch.clamp(heatmap, min=0)
+        
+            # Convert to numpy and normalize
+            heatmap_np = heatmap.cpu().numpy()
+            if np.max(heatmap_np) > 0:  # Avoid division by zero
+                heatmap_np = heatmap_np / np.max(heatmap_np)
+    
             # Create visualization
             plt.figure(figsize=(7, 6))
             ax = plt.subplot(111)
-        
+    
             # Convert to RGB for consistency
             img_array = np.array(image)
-        
+    
             # Apply colormap to heatmap
-            heatmap_resized = np.uint8(255 * cm.jet(heatmap)[:, :, :3])
+            heatmap_resized = np.uint8(255 * cm.jet(heatmap_np)[:, :, :3])
             heatmap_pil = Image.fromarray(heatmap_resized).resize((img_array.shape[1], img_array.shape[0]))
             heatmap_array = np.array(heatmap_pil)
-        
+    
             # Blend images
             blended = np.uint8((1 - alpha) * img_array + alpha * heatmap_array)
-        
+    
             # Plot
             ax.imshow(blended)
             ax.set_title(f"Prediction: {pred_label} ({confidence:.2f}%)")
             ax.axis('off')
-        
+    
             # Add colorbar
             norm = Normalize(vmin=0, vmax=1)
             sm = plt.cm.ScalarMappable(cmap='jet', norm=norm)
             sm.set_array([])
             cbar = plt.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
             cbar.set_label('Influence Level', rotation=270, labelpad=15)
-        
+    
             # Save the visualization
             output_filename = f"gradcam_{os.path.basename(image_path)}"
             output_path = os.path.join(os.path.dirname(image_path), output_filename)
             plt.savefig(output_path, bbox_inches='tight')
             plt.close()
-        
+    
             return {
                 'success': True,
                 'gradcam_path': output_filename,
                 'prediction': pred_label,
                 'confidence': confidence
             }
-    
+
         finally:
             # Remove hooks
             handle1.remove()
             handle2.remove()
+
     def preprocess_image(self, image):
         """Preprocess the image for model input"""
         try:
@@ -381,8 +393,6 @@ def delete_previous_images():
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-
-
 @app.route('/api/grad-cam', methods=['POST'])
 def grad_cam_api():
     if 'file' not in request.form:
@@ -391,24 +401,34 @@ def grad_cam_api():
     filename = request.form['file']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
+    # Get alpha value from request
+    alpha = float(request.form.get('alpha', 0.5))
+    
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'})
     
     try:
-        result = ai_detector.generate_gradcam(filepath)
+        # Generate fresh Grad-CAM with current alpha
+        result = ai_detector.generate_gradcam(filepath, alpha=alpha)
         
-        if result['success']:
-            return jsonify({
-                'success': True,
-                'gradcam_url': f"/static/uploads/{result['gradcam_path']}",
-                'prediction': result['prediction'],
-                'confidence': result['confidence']
-            })
-        else:
-            return jsonify({'error': 'Failed to generate visualization'})
+        # Add timestamp to prevent caching
+        timestamp = int(time.time())
+        
+        return jsonify({
+            'success': True,
+            'gradcam_url': f"/static/uploads/gradcam_{filename}?t={timestamp}",
+            'prediction': result.get('prediction', ''),
+            'confidence': result.get('confidence', '')
+        })
     
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())  # Detailed error in console
         return jsonify({'error': str(e)})
+
+
+
+
 
 # API Routes
 @app.route('/')

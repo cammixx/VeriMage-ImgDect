@@ -178,67 +178,137 @@ document.addEventListener("DOMContentLoaded", function () {
      const findMoreBtn = document.getElementById("findMoreBtn");
      if (findMoreBtn) {
         findMoreBtn.addEventListener("click", function() {
-            // Disable the button immediately to prevent double-clicks
-            this.disabled = true;
-            // Optionally change text to show processing
-            this.textContent = "Generating...";
+            // Disable button and show loading state
+            findMoreBtn.disabled = true;
+            findMoreBtn.textContent = "Generating...";
             
-            // Get the current image filename from URL or another source
+            // Get the current image filename from URL or path
             const pathSegments = window.location.pathname.split('/');
             const filename = pathSegments[pathSegments.length - 1];
             
-            // Call the API to generate Grad-CAM
-            fetch('/api/grad-cam', {
-                method: 'POST',
-                body: (() => {
-                    const formData = new FormData();
-                    formData.append('file', filename);
-                    return formData;
-                })()
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(`Error: ${data.error}`);
-                    // Re-enable button on error
-                    findMoreBtn.disabled = false;
-                    findMoreBtn.textContent = "Find More";
-                    return;
-                }
-                
-                // Create or update the Grad-CAM container
-                let gradcamContainer = document.getElementById("gradcamContainer");
-                if (!gradcamContainer) {
-                    gradcamContainer = document.createElement("div");
-                    gradcamContainer.id = "gradcamContainer";
-                    gradcamContainer.className = "text-center mt-3";
-                    
-                    // Add container after result text
-                    const resultText = document.getElementById("resultText");
-                    resultText.parentNode.insertBefore(gradcamContainer, resultText.nextSibling);
-                }
-                
-                // Display the Grad-CAM visualization
-                gradcamContainer.innerHTML = `
-                    <h4>Prediction Explanation</h4>
-                    <img src="${data.gradcam_url}" class="img-fluid" alt="Grad-CAM Visualization">
-                `;
-                
-                // Important: EITHER hide the button completely
-                findMoreBtn.style.display = "none";
-                
-                // OR keep it disabled permanently
-                // findMoreBtn.disabled = true;
-                // findMoreBtn.textContent = "Analysis Complete";
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Re-enable button on error
-                findMoreBtn.disabled = false;
-                findMoreBtn.textContent = "Find More";
-            });
+            // Call the API to generate Grad-CAM with default alpha value
+            generateGradCam(filename, 0.5);
         });
-    }   
+    }
+    
+    // Function to generate Grad-CAM with specified alpha value
+    function generateGradCam(filename, alpha) {
+        fetch('/api/grad-cam', {
+            method: 'POST',
+            body: (() => {
+                const formData = new FormData();
+                formData.append('file', filename);
+                formData.append('alpha', alpha);
+                return formData;
+            })()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+                findMoreBtn.textContent = "Find More";
+                findMoreBtn.disabled = false;
+                return;
+            }
+            
+            // Create or update the Grad-CAM container
+            let gradcamContainer = document.getElementById("gradcamContainer");
+            if (!gradcamContainer) {
+                gradcamContainer = document.createElement("div");
+                gradcamContainer.id = "gradcamContainer";
+                gradcamContainer.className = "mt-4 text-center";
+                
+                // Insert after the result text
+                const resultText = document.getElementById("resultText");
+                resultText.parentNode.insertBefore(gradcamContainer, resultText.nextSibling);
+            }
+            
+            // Display the Grad-CAM visualization
+            gradcamContainer.innerHTML = `
+                <h4 class="mt-3">Explainability Visualization</h4>
+                <p>Areas highlighted in red/yellow influenced the model's decision the most</p>
+                <img src="${data.gradcam_url}?t=${new Date().getTime()}" class="img-fluid mt-2" id="gradcamImage" alt="Grad-CAM Visualization">
+            `;
+            
+            // Show the slider container
+            const sliderContainer = document.getElementById("sliderContainer");
+            if (sliderContainer) {
+                sliderContainer.style.display = "block";
+            }
+            
+            // Reset button
+            findMoreBtn.textContent = "Find More";
+            findMoreBtn.disabled = false;
+            
+            // Set up slider event listener
+            setupSlider(filename);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating visualization');
+            findMoreBtn.textContent = "Find More";
+            findMoreBtn.disabled = false;
+        });
+    }
+    
+    // Function to set up slider event handling
+    function setupSlider(filename) {
+        const alphaSlider = document.getElementById("alphaSlider");
+        if (alphaSlider) {
+            // Debounce to prevent too many requests
+            let debounceTimer;
+            alphaSlider.addEventListener("input", function() {
+                // Visual feedback
+                const gradcamImage = document.getElementById("gradcamImage");
+                if (gradcamImage) {
+                    gradcamImage.style.opacity = 0.7;
+                }
+                
+                // Clear any previous timer
+                clearTimeout(debounceTimer);
+                
+                debounceTimer = setTimeout(() => {
+                    const alpha = parseFloat(alphaSlider.value);
+                    
+                    // Get currently displayed image filename if not provided
+                    const currentFilename = filename || (() => {
+                        const pathSegments = window.location.pathname.split('/');
+                        return pathSegments[pathSegments.length - 1];
+                    })();
+                    
+                    // Generate new Grad-CAM with current alpha
+                    fetch('/api/grad-cam', {
+                        method: 'POST',
+                        body: (() => {
+                            const formData = new FormData();
+                            formData.append('file', currentFilename);
+                            formData.append('alpha', alpha);
+                            return formData;
+                        })()
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error:', data.error);
+                            alert(`Error: ${data.error}`);
+                            return;
+                        }
+                        
+                        // Update the image
+                        const gradcamImage = document.getElementById("gradcamImage");
+                        if (gradcamImage) {
+                            gradcamImage.src = data.gradcam_url;
+                            gradcamImage.style.opacity = 1.0;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }, 300);
+            });
+        }
+    }
+        
         
     // Function to open the full-size image modal
     window.openFullSizeImage = function() {
