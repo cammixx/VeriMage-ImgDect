@@ -28,8 +28,29 @@
       <p id="resultText" class="h5 text-center mt-3"></p>
     </div>
     <div class="text-center mt-3">
-      <a href="/" class="btn btn-primary">Go Back</a>
+<!-- Grad-CAM container is dynamically inserted here by JS -->
+
+<!-- Add this slider container below (or at the end of your main content div) -->
+<div id="sliderContainer" class="text-center mt-3" style="display: none;">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <label for="alphaSlider" class="form-label">Adjust Heatmap Transparency</label>
+        <input type="range" class="form-range" id="alphaSlider" min="0.1" max="0.9" step="0.1" value="0.5">
+        <div class="d-flex justify-content-between">
+          <small>More Original</small>
+          <small>More Heatmap</small>
+        </div>
+      </div>
     </div>
+  </div>
+  
+    <!-- Add this above the Go Back button -->
+<div class="text-center mt-3">
+  <button id="findMoreBtn" class="btn btn-secondary mb-2">Find More</button>
+  <a href="/" class="btn btn-primary">Go Back</a>
+
+    </div>
+
   </div>
 
   <script src="../static/script.js"></script>
