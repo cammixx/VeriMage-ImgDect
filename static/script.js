@@ -48,14 +48,29 @@ document.addEventListener("DOMContentLoaded", function () {
             submitButton.classList.add('disabled');
             submitButton.disabled = true;
     
-            // Start percentage animation
-            let percentage = 0;
-            const interval = setInterval(() => {
-                percentage += 1;
-                if (percentage <= 100) {
-                    percentageText.textContent = `${percentage}%`;
+            // Create EventSource for SSE
+            const eventSource = new EventSource('/progress');
+            
+            // Handle progress updates
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                const progress = Math.round(data.progress * 100);
+                percentageText.textContent = `${progress}%`;
+                
+                // If progress is 100%, close the connection and prepare for redirect
+                if (progress >= 100) {
+                    eventSource.close();
                 }
-            }, 50); // Adjust speed by changing the interval
+            };
+            
+            // Handle errors
+            eventSource.onerror = function() {
+                eventSource.close();
+                alert('Error receiving progress updates');
+                loadingOverlay.style.display = "none";
+                submitButton.innerHTML = 'Click to Analyze';
+                submitButton.disabled = false;
+            };
 
             // ----- Handle Form Submission -----   
             try {
@@ -64,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 if (fileInput.files.length === 0) {
                     alert('Please select an image to analyze');
-                    clearInterval(interval);
+                    eventSource.close();
                     loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
@@ -74,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 formData.append('file', fileInput.files[0]);
                 
                 // Submit to Flask API
-                const response = await fetch('/uploads', {
+                const response = await fetch('/upload', {
                     method: 'POST', 
                     body: formData
                 });
@@ -83,7 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 if (result.error) {
                     alert(result.error);
-                    clearInterval(interval);
+                    eventSource.close();
                     loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
@@ -92,20 +107,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 // ----- Handle Redirect -----  
                 if (result.success && result.redirect) {
-                    // Wait for percentage to reach 100%
-                    if (percentage < 100) {
-                        await new Promise(resolve => {
-                            const checkInterval = setInterval(() => {
-                                if (percentage >= 100) {
-                                    clearInterval(checkInterval);
-                                    resolve();
-                                }
-                            }, 10);
-                        });
-                    }
+                    // Wait for progress to reach 100% through SSE
+                    await new Promise(resolve => {
+                        const checkInterval = setInterval(() => {
+                            if (parseInt(percentageText.textContent) >= 100) {
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 10);
+                    });
                     
                     // Show 100% for a moment before redirecting
-                    percentageText.textContent = "100%";
                     await new Promise(resolve => setTimeout(resolve, 100)); 
                     
                     // Redirect to the result page
@@ -113,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 } else {
                     // Handle unexpected response
                     alert('An error occurred during image analysis');
-                    clearInterval(interval);
+                    eventSource.close();
                     loadingOverlay.style.display = "none";
                     submitButton.innerHTML = 'Click to Analyze';
                     submitButton.disabled = false;
@@ -121,7 +133,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred during image analysis');
-                clearInterval(interval);
+                eventSource.close();
                 loadingOverlay.style.display = "none";
                 submitButton.innerHTML = 'Click to Analyze';
                 submitButton.disabled = false;

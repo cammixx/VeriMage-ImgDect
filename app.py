@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory, make_response, url_for, redirect
+from flask import Flask, request, jsonify, render_template, send_from_directory, make_response, url_for, redirect, Response, stream_with_context
 import os
 from werkzeug.utils import secure_filename
 import logging
@@ -14,6 +14,8 @@ from torchvision import transforms
 from scipy.stats import entropy
 import math
 from scipy import ndimage
+import json
+import time
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -58,6 +60,9 @@ data_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
+
+# Add this at the top with other global variables
+progress_queue = []
 
 class AIImageDetector:
     """Implements AI-generated image detection using the trained model"""
@@ -373,23 +378,40 @@ def upload_image():
         try:
             file.save(filepath)
             
+            # Update progress to 10% - Starting analysis
+            update_progress(0.1)
+            
+            # Load and preprocess image
+            image = Image.open(filepath).convert("RGB")
+            update_progress(0.3)  # 30% - Image loaded
+            
+            # Get model prediction
+            if ai_detector:
+                update_progress(0.5)  # 50% - Starting model inference
+                result = ai_detector.predict_image(filepath)
+                update_progress(0.8)  # 80% - Model inference complete
+            else:
+                raise Exception("AI model is unavailable")
+            
+            update_progress(1.0)  # 100% - Analysis complete
+            
             # Read the saved file for base64 encoding
             with open(filepath, 'rb') as saved_file:
                 image_data = base64.b64encode(saved_file.read()).decode('utf-8')
                 
+            return jsonify({
+                "success": True,
+                "redirect": f"/result/{filename}",
+                "image_path": f"/uploads/{filename}",
+                "image_data": image_data
+            }), 200
+            
         except Exception as e:
             logger.error(f"Failed to save file: {str(e)}")
             return jsonify({
                 "error": "Failed to save uploaded file",
                 "details": str(e)
             }), 500
-
-        return jsonify({
-            "success": True,
-            "redirect": f"/result/{filename}",
-            "image_path": f"/uploads/{filename}",
-            "image_data": image_data
-        }), 200
             
     except Exception as e:
         error_message = str(e)
@@ -527,10 +549,22 @@ def request_entity_too_large(error):
     max_size_mb = app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
     return jsonify({"error": f"File is too large. Maximum allowed size is {max_size_mb:.1f} MB."}), 413
 
-# Add alias route for the incorrect /uploads endpoint
-@app.route('/uploads', methods=['POST'])
-def uploads_alias():
-    return upload_image()
+# Progress tracking for the analysis animation
+@app.route('/progress')
+def progress():
+    def generate():
+        while True:
+            if progress_queue:
+                progress_value = progress_queue.pop(0)
+                data = json.dumps({"progress": progress_value})
+                yield f"data: {data}\n\n"
+            time.sleep(0.1)
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+def update_progress(progress_value):
+    """Update the progress value that will be sent to the client"""
+    progress_queue.append(progress_value)
 
 # Add startup check
 upload_dir = app.config['UPLOAD_FOLDER']
