@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("imageInput").click();
             });
         }
-    
+
         // Handle Image Upload Preview
         document.getElementById('imageInput').addEventListener('change', function (e) {
             const reader = new FileReader();
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const container = document.getElementById('thumbnailContainer');
                 const preview = document.getElementById('imagePreview');
                 const placeholder = document.getElementById('previewPlaceholder');
-    
+
                 if (container && preview) {
                     preview.src = reader.result;
                     preview.style.display = 'block'; // Show the preview image
@@ -28,43 +28,43 @@ document.addEventListener("DOMContentLoaded", function () {
                     sessionStorage.setItem("uploadedImage", reader.result);
                 }
             };
-    
+
             if (this.files.length > 0) {
                 reader.readAsDataURL(this.files[0]);
             }
         });
-    
+
         // ----- Handle Form Submission and Redirect with Processing Overlay -----  
         uploadForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-    
+
             const submitButton = document.querySelector('button[type="submit"]');
             const percentageText = document.querySelector('.percentage-text');
             const loadingOverlay = document.getElementById("loadingOverlay");
-            
+
             // Show loading overlay on click
             loadingOverlay.style.display = "flex";
             submitButton.innerHTML = '<span class="spinner-grow spinner-grow-sm me-2" role="status" aria-hidden="true"></span>Analyzing...';
             submitButton.classList.add('disabled');
             submitButton.disabled = true;
-    
+
             // Create EventSource for SSE
             const eventSource = new EventSource('/progress');
-            
+
             // Handle progress updates
-            eventSource.onmessage = function(event) {
+            eventSource.onmessage = function (event) {
                 const data = JSON.parse(event.data);
                 const progress = Math.round(data.progress * 100);
                 percentageText.textContent = `${progress}%`;
-                
+
                 // If progress is 100%, close the connection and prepare for redirect
                 if (progress >= 100) {
                     eventSource.close();
                 }
             };
-            
+
             // Handle errors
-            eventSource.onerror = function() {
+            eventSource.onerror = function () {
                 eventSource.close();
                 alert('Error receiving progress updates');
                 loadingOverlay.style.display = "none";
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 const formData = new FormData();
                 const fileInput = document.getElementById('imageInput');
-                
+
                 if (fileInput.files.length === 0) {
                     alert('Please select an image to analyze');
                     eventSource.close();
@@ -85,17 +85,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     submitButton.disabled = false;
                     return;
                 }
-                
+
                 formData.append('file', fileInput.files[0]);
-                
+
                 // Submit to Flask API
                 const response = await fetch('/upload', {
-                    method: 'POST', 
+                    method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.error) {
                     alert(result.error);
                     eventSource.close();
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     submitButton.disabled = false;
                     return;
                 }
-                
+
                 // ----- Handle Redirect -----  
                 if (result.success && result.redirect) {
                     // Wait for progress to reach 100% through SSE
@@ -116,10 +116,10 @@ document.addEventListener("DOMContentLoaded", function () {
                             }
                         }, 10);
                     });
-                    
+
                     // Show 100% for a moment before redirecting
-                    await new Promise(resolve => setTimeout(resolve, 100)); 
-                    
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
                     // Redirect to the result page
                     window.location.href = result.redirect;
                 } else {
@@ -140,22 +140,22 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
-    
+
     // ----- Code for the Result Page -----
     const resultContainer = document.getElementById("resultContainer");
     if (resultContainer) {
         const resultText = document.getElementById("resultText");
         const userImage = document.getElementById("userImage");
         const introText = document.getElementById("introText");
-        
+
         // Get the filename from the URL
         const pathSegments = window.location.pathname.split('/');
         const filename = pathSegments[pathSegments.length - 1];
-        
+
         if (userImage) {
             userImage.src = `/static/uploads/${filename}`;
         }
-        
+
         // Fetch the detection results
         fetch(`/api/analyze`, {
             method: 'POST',
@@ -165,45 +165,46 @@ document.addEventListener("DOMContentLoaded", function () {
                 return formData;
             })()
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                resultText.innerHTML = `<span class="error">Error: ${data.error}</span>`;
-                return;
-            }
-            
-            // ----- Set the result text based on the ai model prediction -----
-            const isAi = data.classification === 'AI-generated Image';
-            const colorClass = isAi ? "fraudulent" : "authentic";
-            const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
-            
-            resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`; })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultText.innerHTML = `<span class="error">Error: ${data.error}</span>`;
+                    return;
+                }
 
-        // ----- Handle Error -----
-        .catch(error => {
-            console.error('Error:', error);
-            resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
-        });
+                // ----- Set the result text based on the ai model prediction -----
+                const isAi = data.classification === 'AI-generated Image';
+                const colorClass = isAi ? "fraudulent" : "authentic";
+                const confidence = isAi ? data.ai_probability.toFixed(2) : data.real_probability.toFixed(2);
+
+                resultText.innerHTML = `<span class="${colorClass}">${confidence}% confidence - ${data.classification}</span>`;
+            })
+
+            // ----- Handle Error -----
+            .catch(error => {
+                console.error('Error:', error);
+                resultText.innerHTML = '<span class="error">Error retrieving analysis results</span>';
+            });
 
     }
-     // Add Find More button functionality
-     const findMoreBtn = document.getElementById("findMoreBtn");
-     if (findMoreBtn) {
-        findMoreBtn.addEventListener("click", function() {
+    // Add Find More button functionality
+    const findMoreBtn = document.getElementById("findMoreBtn");
+    if (findMoreBtn) {
+        findMoreBtn.addEventListener("click", function () {
             // Disable button and show loading state
             findMoreBtn.disabled = true;
             findMoreBtn.textContent = "Generating...";
             findMoreBtn.style.display = "none";
-            
+
             // Get the current image filename from URL or path
             const pathSegments = window.location.pathname.split('/');
             const filename = pathSegments[pathSegments.length - 1];
-            
+
             // Call the API to generate Grad-CAM with default alpha value
             generateGradCam(filename, 0.5);
         });
     }
-    
+
     // Function to generate Grad-CAM with specified alpha value
     function generateGradCam(filename, alpha) {
         fetch('/api/grad-cam', {
@@ -215,80 +216,80 @@ document.addEventListener("DOMContentLoaded", function () {
                 return formData;
             })()
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(`Error: ${data.error}`);
-                findMoreBtn.textContent = "Find More";
-                findMoreBtn.disabled = false;
-                return;
-            }
-            
-            // Create or update the Grad-CAM container
-            let gradcamContainer = document.getElementById("gradcamContainer");
-            if (!gradcamContainer) {
-                gradcamContainer = document.createElement("div");
-                gradcamContainer.id = "gradcamContainer";
-                gradcamContainer.className = "mt-4 text-center";
-                
-                // Insert after the result text
-                const resultText = document.getElementById("resultText");
-                resultText.parentNode.insertBefore(gradcamContainer, resultText.nextSibling);
-            }
-            
-            // Display the Grad-CAM visualization
-            gradcamContainer.innerHTML = `
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                    findMoreBtn.textContent = "Find More";
+                    findMoreBtn.disabled = false;
+                    return;
+                }
+
+                // Create or update the Grad-CAM container
+                let gradcamContainer = document.getElementById("gradcamContainer");
+                if (!gradcamContainer) {
+                    gradcamContainer = document.createElement("div");
+                    gradcamContainer.id = "gradcamContainer";
+                    gradcamContainer.className = "mt-4 text-center";
+
+                    // Insert after the result text
+                    const resultText = document.getElementById("resultText");
+                    resultText.parentNode.insertBefore(gradcamContainer, resultText.nextSibling);
+                }
+
+                // Display the Grad-CAM visualization
+                gradcamContainer.innerHTML = `
                 <h4 class="mt-3">Explainability Visualization</h4>
                 <p>Areas highlighted in red/yellow influenced the model's decision the most</p>
                 <img src="${data.gradcam_url}?t=${new Date().getTime()}" class="img-fluid mt-2" id="gradcamImage" alt="Grad-CAM Visualization">
             `;
-            
-            // Show the slider container
-            const sliderContainer = document.getElementById("sliderContainer");
-            if (sliderContainer) {
-                sliderContainer.style.display = "block";
-            }
-            
-            // Reset button
-            findMoreBtn.textContent = "Find More";
-            findMoreBtn.disabled = false;
-            
-            // Set up slider event listener
-            setupSlider(filename);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error generating visualization');
-            findMoreBtn.textContent = "Find More";
-            findMoreBtn.disabled = false;
-        });
+
+                // Show the slider container
+                const sliderContainer = document.getElementById("sliderContainer");
+                if (sliderContainer) {
+                    sliderContainer.style.display = "block";
+                }
+
+                // Reset button
+                findMoreBtn.textContent = "Find More";
+                findMoreBtn.disabled = false;
+
+                // Set up slider event listener
+                setupSlider(filename);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error generating visualization');
+                findMoreBtn.textContent = "Find More";
+                findMoreBtn.disabled = false;
+            });
     }
-    
+
     // Function to set up slider event handling
     function setupSlider(filename) {
         const alphaSlider = document.getElementById("alphaSlider");
         if (alphaSlider) {
             // Debounce to prevent too many requests
             let debounceTimer;
-            alphaSlider.addEventListener("input", function() {
+            alphaSlider.addEventListener("input", function () {
                 // Visual feedback
                 const gradcamImage = document.getElementById("gradcamImage");
                 if (gradcamImage) {
                     gradcamImage.style.opacity = 0.7;
                 }
-                
+
                 // Clear any previous timer
                 clearTimeout(debounceTimer);
-                
+
                 debounceTimer = setTimeout(() => {
                     const alpha = parseFloat(alphaSlider.value);
-                    
+
                     // Get currently displayed image filename if not provided
                     const currentFilename = filename || (() => {
                         const pathSegments = window.location.pathname.split('/');
                         return pathSegments[pathSegments.length - 1];
                     })();
-                    
+
                     // Generate new Grad-CAM with current alpha
                     fetch('/api/grad-cam', {
                         method: 'POST',
@@ -299,32 +300,32 @@ document.addEventListener("DOMContentLoaded", function () {
                             return formData;
                         })()
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            console.error('Error:', data.error);
-                            alert(`Error: ${data.error}`);
-                            return;
-                        }
-                        
-                        // Update the image
-                        const gradcamImage = document.getElementById("gradcamImage");
-                        if (gradcamImage) {
-                            gradcamImage.src = data.gradcam_url;
-                            gradcamImage.style.opacity = 1.0;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                console.error('Error:', data.error);
+                                alert(`Error: ${data.error}`);
+                                return;
+                            }
+
+                            // Update the image
+                            const gradcamImage = document.getElementById("gradcamImage");
+                            if (gradcamImage) {
+                                gradcamImage.src = data.gradcam_url;
+                                gradcamImage.style.opacity = 1.0;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
                 }, 300);
             });
         }
     }
-        
-        
+
+
     // Function to open the full-size image modal
-    window.openFullSizeImage = function() {
+    window.openFullSizeImage = function () {
         const modal = new bootstrap.Modal(document.getElementById('imageModal'));
         modal.show();
     };
