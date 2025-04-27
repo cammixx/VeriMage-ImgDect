@@ -1,39 +1,30 @@
+# Flask and web framework imports
 from flask import Flask, request, jsonify, render_template, send_from_directory, make_response, url_for, redirect, Response, stream_with_context
-import os
-from werkzeug.utils import secure_filename
-import logging
-from PIL import Image
-import traceback  # Added for better error tracking
-import datetime
-import numpy as np
 from flask_cors import CORS
-import base64
+from werkzeug.utils import secure_filename
+# Image processing and ML imports
+from PIL import Image
+import numpy as np
 import torch
 import torchvision.models as models
 from torchvision import transforms
-from scipy.stats import entropy
-import math
-from scipy import ndimage
-import json
-import time
-import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import os
-import torch
-from torchvision import models, transforms
-from PIL import Image
-import torch.nn.functional as F
-import numpy as np
-import matplotlib.pyplot as plt
+
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.use('Agg')  # Must be set before importing pyplot
+import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize
-import os
-import time
 
+import os
+import json
+import time
+import logging
+import traceback
+import datetime
+import base64
+from threading import Lock
+from queue import Queue
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -156,7 +147,7 @@ class AIImageDetector:
         try:
             # Forward pass
             output = self.model(transformed)
-            probs = F.softmax(output, dim=1)
+            probs = torch.softmax(output, dim=1)
             pred_idx = torch.argmax(output).item()
             pred_label = self.class_names[pred_idx]
             confidence = probs[0][pred_idx].item() * 100
