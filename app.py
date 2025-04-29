@@ -164,17 +164,22 @@ class AIImageDetector:
             # Prepare output path first to avoid file issues later
             output_dir = os.path.dirname(image_path)
             os.makedirs(output_dir, exist_ok=True)
-            output_filename = f"gradcam_{os.path.basename(image_path)}"
+            
+            # Include alpha in filename to generate different versions for different alpha values
+            basename = os.path.basename(image_path)
+            filename_parts = os.path.splitext(basename)
+            output_filename = f"gradcam_{filename_parts[0]}_alpha{alpha:.1f}{filename_parts[1]}"
             output_path = os.path.join(output_dir, output_filename)
             
-            # Check if file already exists - skip processing if so
+            # Check if file already exists with the same alpha - skip processing if so
             if os.path.exists(output_path):
-                self.logger.info(f"GradCAM visualization already exists: {output_path}")
+                self.logger.info(f"GradCAM visualization already exists with alpha={alpha}: {output_path}")
                 return {
                     'success': True,
                     'gradcam_path': output_filename,
                     'prediction': "Re-using existing visualization",
-                    'confidence': 100.0
+                    'confidence': 100.0,
+                    'alpha': alpha
                 }
             
             # Load image
@@ -297,7 +302,7 @@ class AIImageDetector:
                 heatmap_pil = Image.fromarray(heatmap_resized).resize((img_array.shape[1], img_array.shape[0]))
                 heatmap_array = np.array(heatmap_pil)
                 
-                # Blend images
+                # Blend images with the specified alpha value
                 blended = np.uint8((1 - alpha) * img_array + alpha * heatmap_array)
                 
                 # Plot and save
@@ -331,7 +336,7 @@ class AIImageDetector:
                     self.logger.error(f"Failed to save GradCAM visualization: {output_path}")
                     return {'error': "Failed to save visualization"}
                 
-                self.logger.info(f"Successfully saved GradCAM to: {output_path}")
+                self.logger.info(f"Successfully saved GradCAM with alpha={alpha} to: {output_path}")
                 
                 # Force garbage collection again
                 gc.collect()
@@ -340,7 +345,8 @@ class AIImageDetector:
                     'success': True,
                     'gradcam_path': output_filename,
                     'prediction': pred_label,
-                    'confidence': confidence
+                    'confidence': confidence,
+                    'alpha': alpha
                 }
             except Exception as e:
                 self.logger.error(f"Error during visualization: {str(e)}")
@@ -745,8 +751,19 @@ def grad_cam_api():
             logger.error("AI detector not available for GradCAM generation")
             return jsonify({'error': 'AI model is unavailable'}), 503
         
-        alpha = float(request.form.get('alpha', 0.5))
-        logger.info(f"Using alpha value: {alpha}")
+        # Parse alpha parameter with proper error handling
+        try:
+            # Get alpha from form data and convert to float
+            alpha_str = request.form.get('alpha', '0.5')
+            alpha = float(alpha_str)
+            # Clamp alpha to valid range
+            alpha = max(0.1, min(0.9, alpha))
+            logger.info(f"Using alpha value: {alpha} (from input: {alpha_str})")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid alpha value: {request.form.get('alpha')} - {str(e)}")
+            # Use default if conversion fails
+            alpha = 0.5
+            logger.info(f"Using default alpha value: {alpha}")
         
         # Generate the GradCAM visualization
         try:
@@ -785,7 +802,8 @@ def grad_cam_api():
             'success': True,
             'gradcam_url': gradcam_path,
             'prediction': result.get('prediction', ''),
-            'confidence': result.get('confidence', '')
+            'confidence': result.get('confidence', ''),
+            'alpha': alpha  # Return the actual alpha used
         }), 200
     
     except Exception as e:

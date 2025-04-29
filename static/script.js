@@ -269,20 +269,46 @@ document.addEventListener("DOMContentLoaded", function () {
     function setupSlider(filename) {
         const alphaSlider = document.getElementById("alphaSlider");
         if (alphaSlider) {
+            // Reset slider to middle position
+            alphaSlider.value = 0.5;
+            
             // Debounce to prevent too many requests
             let debounceTimer;
+            
+            // Add visual feedback class
+            const gradcamContainer = document.getElementById("gradcamContainer");
+            if (gradcamContainer) {
+                gradcamContainer.classList.add("has-slider");
+            }
+            
             alphaSlider.addEventListener("input", function () {
-                // Visual feedback
+                // Visual feedback during slider movement
                 const gradcamImage = document.getElementById("gradcamImage");
                 if (gradcamImage) {
                     gradcamImage.style.opacity = 0.7;
+                    gradcamImage.classList.add("updating");
+                }
+                
+                // Show a loading indicator
+                let loadingIndicator = document.getElementById("sliderLoadingIndicator");
+                if (!loadingIndicator) {
+                    loadingIndicator = document.createElement("div");
+                    loadingIndicator.id = "sliderLoadingIndicator";
+                    loadingIndicator.className = "text-center mt-2";
+                    loadingIndicator.innerHTML = '<small>Updating visualization...</small>';
+                    const sliderContainer = document.getElementById("sliderContainer");
+                    if (sliderContainer) {
+                        sliderContainer.appendChild(loadingIndicator);
+                    }
                 }
 
                 // Clear any previous timer
                 clearTimeout(debounceTimer);
 
+                // Set a new timer
                 debounceTimer = setTimeout(() => {
                     const alpha = parseFloat(alphaSlider.value);
+                    console.log("Generating GradCAM with alpha:", alpha);
 
                     // Get currently displayed image filename if not provided
                     const currentFilename = filename || (() => {
@@ -300,25 +326,61 @@ document.addEventListener("DOMContentLoaded", function () {
                             return formData;
                         })()
                     })
-                        .then(response => response.json())
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             if (data.error) {
                                 console.error('Error:', data.error);
-                                alert(`Error: ${data.error}`);
-                                return;
+                                throw new Error(data.error);
                             }
 
-                            // Update the image
+                            // Update the image with a cache-busting parameter
                             const gradcamImage = document.getElementById("gradcamImage");
                             if (gradcamImage) {
-                                gradcamImage.src = data.gradcam_url;
-                                gradcamImage.style.opacity = 1.0;
+                                const cacheBuster = new Date().getTime();
+                                gradcamImage.src = `${data.gradcam_url}&cb=${cacheBuster}`;
+                                
+                                // Remove updating class when the image loads
+                                gradcamImage.onload = function() {
+                                    gradcamImage.style.opacity = 1.0;
+                                    gradcamImage.classList.remove("updating");
+                                    
+                                    // Remove loading indicator
+                                    const loadingIndicator = document.getElementById("sliderLoadingIndicator");
+                                    if (loadingIndicator) {
+                                        loadingIndicator.remove();
+                                    }
+                                };
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
+                            
+                            // Reset image opacity even on error
+                            const gradcamImage = document.getElementById("gradcamImage");
+                            if (gradcamImage) {
+                                gradcamImage.style.opacity = 1.0;
+                                gradcamImage.classList.remove("updating");
+                            }
+                            
+                            // Remove loading indicator and show error
+                            const loadingIndicator = document.getElementById("sliderLoadingIndicator");
+                            if (loadingIndicator) {
+                                loadingIndicator.innerHTML = `<small class="text-danger">Error: ${error.message}</small>`;
+                                
+                                // Auto-hide error after a few seconds
+                                setTimeout(() => {
+                                    if (loadingIndicator.parentNode) {
+                                        loadingIndicator.remove();
+                                    }
+                                }, 3000);
+                            }
                         });
-                }, 300);
+                }, 300); // 300ms debounce
             });
         }
     }
