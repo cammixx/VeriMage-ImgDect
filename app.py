@@ -110,16 +110,6 @@ class AIImageDetector:
             raise
      # Grad-CAM generation function
     def generate_gradcam(self, image_path, alpha=0.5):
-    # Load fresh model instance each time
-        self.model = models.resnet18(weights='IMAGENET1K_V1')
-        num_classes = 2
-        self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
-        self.model = self.model.to(device)
-        model_path = app.config['MODEL_PATH']
-        # Load the saved model state
-        self.model.load_state_dict(torch.load(model_path, map_location=device))
-        self.model.eval()
-
         # Load and transform image
         image = Image.open(image_path).convert("RGB")
         transformed = data_transform(image).unsqueeze(0).to(device)
@@ -190,7 +180,6 @@ class AIImageDetector:
     
             # Plot
             ax.imshow(blended)
-            ax.set_title(f"Prediction: {pred_label} ({confidence:.2f}%)")
             ax.axis('off')
     
             # Add colorbar
