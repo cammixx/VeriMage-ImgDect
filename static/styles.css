@@ -351,3 +351,93 @@ h2 {
     margin-top: 1rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
+/* Slider styles for transparency control */
+#sliderContainer {
+    transition: opacity 0.3s ease;
+    margin-top: 1.5rem;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+#sliderContainer .form-range {
+    cursor: pointer;
+}
+
+#gradcamImage {
+    transition: opacity 0.3s ease;
+}
+
+#gradcamImage.updating {
+    filter: blur(1px);
+}
+
+.has-slider {
+    position: relative;
+}
+
+#sliderLoadingIndicator {
+    height: 24px;
+    margin: 5px 0;
+}
+
+/* Custom range slider styling */
+input[type=range].form-range {
+    height: 25px;
+    -webkit-appearance: none;
+    margin: 10px 0;
+    width: 100%;
+}
+
+input[type=range].form-range:focus {
+    outline: none;
+}
+
+input[type=range].form-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    animate: 0.2s;
+    box-shadow: 0px 0px 0px #000000;
+    background: #3071A9;
+    border-radius: 4px;
+    border: 0px solid #000000;
+}
+
+input[type=range].form-range::-webkit-slider-thumb {
+    box-shadow: 0px 0px 0px #000000;
+    border: 1px solid #2196F3;
+    height: 18px;
+    width: 18px;
+    border-radius: 50px;
+    background: #FFFFFF;
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -5px;
+}
+
+input[type=range].form-range:focus::-webkit-slider-runnable-track {
+    background: #4285F4;
+}
+
+input[type=range].form-range::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    animate: 0.2s;
+    box-shadow: 0px 0px 0px #000000;
+    background: #3071A9;
+    border-radius: 4px;
+    border: 0px solid #000000;
+}
+
+input[type=range].form-range::-moz-range-thumb {
+    box-shadow: 0px 0px 0px #000000;
+    border: 1px solid #2196F3;
+    height: 18px;
+    width: 18px;
+    border-radius: 50px;
+    background: #FFFFFF;
+    cursor: pointer;
+}
