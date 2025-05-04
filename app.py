@@ -192,24 +192,21 @@ class AIImageDetector:
                 
             # Load model in a controlled way
             try:
-                # Force garbage collection to free memory
                 import gc
                 gc.collect()
-                
-                # Use CPU for stability
+
+                # Lazily move the existing model to CPU for Grad-CAM if it isn't already there
                 local_device = torch.device("cpu")
-                
-                # Load fresh model instance
-                self.model = models.resnet18(weights='IMAGENET1K_V1')
-                num_classes = 2
-                self.model.fc = torch.nn.Linear(self.model.fc.in_features, num_classes)
-                self.model = self.model.to(local_device)
-                self.model.load_state_dict(torch.load(app.config['MODEL_PATH'], map_location=local_device))
+                current_device = next(self.model.parameters()).device
+                if current_device != local_device:
+                    self.logger.info("Moving model to CPU for Grad-CAM computation")
+                    self.model = self.model.to(local_device)
+
                 self.model.eval()
-                self.logger.info("Successfully loaded model for GradCAM")
+                self.logger.info("Re-using in-memory model for Grad-CAM")
             except Exception as e:
-                self.logger.error(f"Error loading model: {str(e)}")
-                return {'error': f"Error loading model: {str(e)}"}
+                self.logger.error(f"Error preparing model for Grad-CAM: {str(e)}")
+                return {'error': f"Error preparing model: {str(e)}"}
 
             # Basic prediction first (without GradCAM) to check if model works
             try:
@@ -596,47 +593,16 @@ def analyze_image():
         if not os.path.exists(filepath):
             return jsonify({"error": "Image file not found"}), 404
         
-        # Run model inference
-        model_path = app.config['MODEL_PATH']
-        if not os.path.exists(model_path):
+        if not ai_detector:
             return jsonify({"error": "AI model is unavailable"}), 503
-            
-        model = models.resnet18(weights='IMAGENET1K_V1')
-        num_classes = 2
-        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-        model = model.to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        model.eval()
-        
-        # Process image and get prediction
-        image = Image.open(filepath).convert("RGB")
-        image = image.resize((224, 224))
-        img_tensor = data_transform(image).unsqueeze(0).to(device)
-        
-        with torch.no_grad():
-            outputs = model(img_tensor)
-            probabilities = torch.softmax(outputs, dim=1)
-            ai_probability = probabilities[0][0].item() * 100
-            real_probability = probabilities[0][1].item() * 100
-            _, predicted_class = torch.max(outputs, 1)
-        
-        # Format results
-        classification = "AI-generated Image" if ai_probability > 50 else "Real Image"
-        
-        results = {
-            "classification": classification,
-            "ai_probability": ai_probability,
-            "real_probability": real_probability,
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "image_metadata": {
-                "filename": os.path.basename(filepath),
-                "format": image.format,
-                "size": image.size,
-                "mode": image.mode
-            },
-            "note": "Analysis performed using trained PyTorch model.",
-            "home_url": url_for('index')
-        }
+
+        # Use the shared AI detector instance for prediction
+        prediction = ai_detector.predict_image(filepath)
+
+        if prediction is None:
+            return jsonify({"error": "Inference failed"}), 500
+
+        results = prediction
         
         return jsonify(results), 200
             
@@ -922,8 +888,8 @@ atexit.register(cleanup_on_exit)
 # Add a 404 handler to prevent falling back to index page
 @app.errorhandler(404)
 def page_not_found(e):
-    """Handle 404 errors with a custom page"""
-    return render_template('404.html', error=str(e)), 404 if os.path.exists('templates/404.html') else jsonify({"error": "Page not found", "details": str(e)}), 404
+    """Handle 404 errors with a JSON response"""
+    return jsonify({"error": "Page not found", "details": str(e)}), 404
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
