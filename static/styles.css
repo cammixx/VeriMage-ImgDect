@@ -62,9 +62,9 @@ h2 {
 
 .site-header {
     text-align: center;
-    margin-top: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #000000;
+    margin-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid #000000;
 }
 
 .site-header h1 {
@@ -440,4 +440,13 @@ input[type=range].form-range::-moz-range-thumb {
     border-radius: 50px;
     background: #FFFFFF;
     cursor: pointer;
+}
+
+.tagline {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 300;
+  font-style: italic;
+  color: #292828;
+  margin-top: 0.5rem;
 }
