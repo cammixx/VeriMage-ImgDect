@@ -34,3 +34,6 @@ flake8>=6.0.0
 
 opencv-python
 psutil>=5.9.0
+# Data Visualization
+matplotlib>=3.5.0
+
