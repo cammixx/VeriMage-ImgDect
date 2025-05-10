@@ -6,18 +6,20 @@ The **Fraud Detection** project aims to detect AI-generated images and predict t
 
 ```
 FRAUD_DETECTION/
-├── static/
-│   ├── uploads/          # Store uploaded images
-│   ├── styles.css        # CSS styles for the application
-│   └── script.js         # JavaScript for frontend functionality
-├── templates/           
-│   ├── index.html        # Upload image interface
-│   └── result.html       # Results display page
-├── dataset/             # Training and testing datasets
-├── aiImage-realImage-classification.ipynb  # Reference AI detection model notebook
-├── app.py               # Flask application with AI model implementation
-├── requirements.txt     # Project dependencies
-└── README.md            # Project documentation
+├── static/                 
+│   ├── uploads/                             # Store uploaded images
+│   ├── styles.css                           # CSS styles for the application
+│   └── script.js                            # JavaScript for frontend functionality
+├── templates/             
+│   ├── index.html                           # Upload image interfaceå
+│   └── result.html                          # Results display page
+├── dataset/                                 # Training and testing datasets              
+├── trained_model.pth                        # Model object
+├── aiImage-realImage-classification.ipynb   # Reference AI detection model notebook
+├── app.py                                   # Flask application with AI model implementation
+├── start.sh                                 # Shell script for ngrok deployment
+├── requirements.txt                         # Project dependencies
+└── README.md                                # Project documentation
 ```
 
 ## Implementation Approach
@@ -52,7 +54,11 @@ This project provides a web application for AI-generated image detection with th
    ```
    python app.py
    ```
-4. Access the application in your browser at `http://localhost:5500`
+4. Access the application:
+   - Locally: `http://localhost:5500`
+   - Public URL: The ngrok URL will be displayed in the console (e.g., `http://xxxx-xx-xx-xxx-xx.ngrok.io`)
+
+Note: The public URL changes each time you restart the application unless you have a paid ngrok account.
 
 ## Model Details
 
