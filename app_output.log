@@ -1,0 +1,17 @@
+INFO:__main__:Loading model from: trained_model.pth
+INFO:__main__:Successfully loaded model of type: <class 'torchvision.models.resnet.ResNet'>
+INFO:__main__:AI Detector initialized successfully
+ * Serving Flask app 'app'
+ * Debug mode: on
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5500
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:Loading model from: trained_model.pth
+INFO:__main__:Successfully loaded model of type: <class 'torchvision.models.resnet.ResNet'>
+INFO:__main__:AI Detector initialized successfully
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 355-327-815
+INFO:__main__:Cleaned up images on app shutdown.
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
